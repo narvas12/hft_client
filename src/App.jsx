@@ -19,11 +19,11 @@ const App = () => {
             <main className="flex-grow">
               <Routes>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={<AdminLogin />} />
+                {/* <Route path="/login" element={<AdminLogin />} />
                 <Route path="/register" element={<AdminRegister />} />
-                <Route path="/test/take" element={<TakeTest />} />
+                <Route path="/test/take" element={<TakeTest />} /> */}
 
-
+{/* 
                 <Route path="/questions/upload" element={
                   <ProtectedRoute>
                     <UploadPDFQuestions />
@@ -33,7 +33,7 @@ const App = () => {
                   <ProtectedRoute>
                     <ListQuestions />
                   </ProtectedRoute>
-                } />
+                } /> */}
               </Routes>
             </main>
           </div>
