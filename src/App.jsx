@@ -2,11 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/nav/NavBar';
-import TakeTest from './components/tests/TakeTest';
-import AdminRegister from './pages/Auth/AdminRegister';
-import ProtectedRoute from '../utils/ProtectedRoutes';
-import UploadPDFQuestions from './components/forms/UploadPDFQuestions';
-import ListQuestions from './components/listItems/ListQuestions';
 import AdminLogin from './pages/Auth/AdminLogin';
 import HomePage from './pages/Home';
 

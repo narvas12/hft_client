@@ -2,31 +2,54 @@ import React, { useState } from 'react';
 import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
+  // User provided fields
   account_id: '',
   name: '',
   pairs: 'BTC_USDT',
   base_order_volume: '100.00',
-  max_safety_orders: '4',
   take_profit: '2.00',
   stop_loss: '5.00',
   profit_margin: '1.00',
+  safety_order_volume: '30.00',
+  safety_order_step_percentage: '1.00',
+
+  // Default fields (hidden from user)
+  max_safety_orders: '4',
   cooldown: '60',
   close_deals_timeout: '60',
   active_safety_orders_count: '1',
-  safety_order_volume: '30.00',
-  safety_order_step_percentage: '1.00',
   base_order_volume_type: 'quote_currency',
   safety_order_volume_type: 'quote_currency',
   take_profit_type: 'total',
   min_profit_type: null,
   martingale_volume_coefficient: '2.00',
   martingale_step_coefficient: '4.00',
-  take_profit_steps: [
-    { amount_percentage: 50, profit_percentage: 10 },
-    { amount_percentage: 50, profit_percentage: 20 },
-  ],
-  strategy_list: [{ strategy: 'nonstop', options: {} }],
 };
+
+const defaultTakeProfitSteps = [
+  { amount_percentage: 50, profit_percentage: 10 },
+  { amount_percentage: 50, profit_percentage: 20 },
+];
+
+const defaultStrategyList = [
+  {
+    strategy: 'rsi_ema_scalping',
+    options: {
+      rsi_period: 14,
+      rsi_lower_bound: 30,
+      rsi_upper_bound: 70,
+      ema_period: 20,
+      buy_signal: {
+        rsi_below: 30,
+        price_above_ema: true
+      },
+      sell_signal: {
+        rsi_above: 70,
+        price_below_ema: true
+      }
+    }
+  }
+];
 
 const HomePage = () => {
   const [formData, setFormData] = useState(initialFormState);
@@ -47,20 +70,33 @@ const HomePage = () => {
     setResponse(null);
 
     try {
+      // Prepare the payload with proper types
       const payload = {
-        ...formData,
         account_id: Number(formData.account_id),
-        base_order_volume: parseFloat(formData.base_order_volume),
+        name: formData.name,
+        pairs: formData.pairs,
+        base_order_volume: formData.base_order_volume,
         take_profit: parseFloat(formData.take_profit),
         stop_loss: parseFloat(formData.stop_loss),
-        safety_order_volume: parseFloat(formData.safety_order_volume),
-        safety_order_step_percentage: parseFloat(formData.safety_order_step_percentage),
-        martingale_volume_coefficient: parseFloat(formData.martingale_volume_coefficient),
-        martingale_step_coefficient: parseFloat(formData.martingale_step_coefficient),
-        max_safety_orders: parseInt(formData.max_safety_orders),
-        active_safety_orders_count: parseInt(formData.active_safety_orders_count),
-        cooldown: parseInt(formData.cooldown),
         profit_margin: parseFloat(formData.profit_margin),
+        safety_order_volume: formData.safety_order_volume,
+        safety_order_step_percentage: formData.safety_order_step_percentage,
+        
+        // Default values that aren't shown to user
+        max_safety_orders: parseInt(formData.max_safety_orders),
+        cooldown: parseInt(formData.cooldown),
+        close_deals_timeout: parseInt(formData.close_deals_timeout),
+        active_safety_orders_count: parseInt(formData.active_safety_orders_count),
+        base_order_volume_type: formData.base_order_volume_type,
+        safety_order_volume_type: formData.safety_order_volume_type,
+        take_profit_type: formData.take_profit_type,
+        min_profit_type: formData.min_profit_type,
+        martingale_volume_coefficient: formData.martingale_volume_coefficient,
+        martingale_step_coefficient: formData.martingale_step_coefficient,
+        
+        // Static configuration
+        take_profit_steps: defaultTakeProfitSteps,
+        strategy_list: defaultStrategyList
       };
 
       const data = await hftBotService.createDcaBot(payload);
@@ -86,7 +122,7 @@ const HomePage = () => {
           min={min}
           value={formData[id]}
           onChange={handleChange}
-          
+          disabled={disabled}
           className={`block w-full px-4 py-2 border ${disabled ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:ring-blue-500 focus:border-blue-500`}
         />
         {['base_order_volume', 'safety_order_volume'].includes(id) && (
@@ -142,10 +178,12 @@ const HomePage = () => {
                   <option value="ETH_USDT">ETH/USDT</option>
                   <option value="BNB_USDT">BNB/USDT</option>
                   <option value="SOL_USDT">SOL/USDT</option>
+                  <option value="ADA_USDT">ADA/USDT</option>
+                  <option value="DOT_USDT">DOT/USDT</option>
                 </select>
               </div>
 
-              {renderInput('account_id', 'Account ID *', 'number', '1', '1', 'Your exchange account identifier', true)}
+              {renderInput('account_id', 'Account ID *', 'number', '1', '1', 'Your exchange account identifier')}
               
               {/* Trading Parameters */}
               <div className="md:col-span-2 mt-4">
@@ -154,10 +192,10 @@ const HomePage = () => {
                 </h2>
               </div>
               
-              {renderInput('base_order_volume', 'Base Order Volume *', 'number', '0.01', '10')}
-              {renderInput('take_profit', 'Take Profit *', 'number', '0.01', '0.1')}
-              {renderInput('stop_loss', 'Stop Loss *', 'number', '0.01', '0.1')}
-              {renderInput('profit_margin', 'Profit Margin *', 'number', '0.01', '0.1')}
+              {renderInput('base_order_volume', 'Base Order Volume (USDT) *', 'number', '0.01', '10', 'Initial order size in USDT')}
+              {renderInput('take_profit', 'Take Profit (%) *', 'number', '0.01', '0.1', 'Target profit percentage')}
+              {renderInput('stop_loss', 'Stop Loss (%) *', 'number', '0.01', '0.1', 'Maximum loss percentage')}
+              {renderInput('profit_margin', 'Profit Margin (%) *', 'number', '0.01', '0.1', 'Minimum profit percentage')}
               
               {/* Advanced Options Toggle */}
               <div className="md:col-span-2">
@@ -181,13 +219,8 @@ const HomePage = () => {
               {/* Advanced Options */}
               {showAdvanced && (
                 <>
-                  {renderInput('max_safety_orders', 'Max Safety Orders', 'number', '1', '1', '', true)}
-                  {renderInput('active_safety_orders_count', 'Active Safety Orders', 'number', '1', '1', '', true)}
-                  {renderInput('safety_order_volume', 'Safety Order Volume', 'number', '0.01', '1')}
-                  {renderInput('safety_order_step_percentage', 'Safety Order Step %', 'number', '0.01', '0.1')}
-                  {renderInput('martingale_volume_coefficient', 'Volume Multiplier', 'number', '0.01', '1', '', true)}
-                  {renderInput('martingale_step_coefficient', 'Step Multiplier', 'number', '0.01', '1', '', true)}
-                  {renderInput('cooldown', 'Cooldown (seconds)', 'number', '1', '0', '', true)}
+                  {renderInput('safety_order_volume', 'Safety Order Volume (USDT)', 'number', '0.01', '1', 'Additional order size in USDT')}
+                  {renderInput('safety_order_step_percentage', 'Safety Order Step (%)', 'number', '0.01', '0.1', 'Price drop percentage before next safety order')}
                 </>
               )}
             </div>
