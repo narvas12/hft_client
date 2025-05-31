@@ -2,49 +2,29 @@ import React, { useState } from 'react';
 import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
-  account_id: '548644752',
-  name: 'BOT',
-  pairs: 'BTC_USDT',
-  base_order_volume: '100.00',
-  take_profit: '2.00',
-  stop_loss: '5.00',
-  profit_margin: '1.00',
-  safety_order_volume: '30.00',
-  safety_order_step_percentage: '1.00',
-  max_safety_orders: '4',
-  cooldown: '60',
-  close_deals_timeout: '60',
-  active_safety_orders_count: '1',
+  account_id: '33202732',
+  name: 'My DCA Bot',
+  pairs: 'USDT_BTC',
+  base_order_volume: '10.0',
+  safety_order_volume: '30.0',
   base_order_volume_type: 'quote_currency',
   safety_order_volume_type: 'quote_currency',
+  max_safety_orders: '4',
+  active_safety_orders_count: '1',
+  safety_order_step_percentage: '1.0',
+  take_profit: '3.5',
   take_profit_type: 'total',
   min_profit_type: null,
-  martingale_volume_coefficient: '2.00',
-  martingale_step_coefficient: '4.00',
+  martingale_volume_coefficient: '2.0',
+  martingale_step_coefficient: '4.0',
+  cooldown: '60',
+  close_deals_timeout: '60',
 };
-
-const defaultTakeProfitSteps = [
-  { amount_percentage: 50, profit_percentage: 10 },
-  { amount_percentage: 50, profit_percentage: 20 },
-];
 
 const defaultStrategyList = [
   {
-    strategy: 'rsi_ema_scalping',
-    options: {
-      rsi_period: 14,
-      rsi_lower_bound: 30,
-      rsi_upper_bound: 70,
-      ema_period: 20,
-      buy_signal: {
-        rsi_below: 30,
-        price_above_ema: true
-      },
-      sell_signal: {
-        rsi_above: 70,
-        price_below_ema: true
-      }
-    }
+    strategy: 'nonstop',
+    options: {}
   }
 ];
 
@@ -54,6 +34,7 @@ const HomePage = () => {
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,39 +53,55 @@ const HomePage = () => {
         name: formData.name,
         pairs: formData.pairs,
         base_order_volume: formData.base_order_volume,
-        take_profit: parseFloat(formData.take_profit),
-        stop_loss: parseFloat(formData.stop_loss),
-        profit_margin: parseFloat(formData.profit_margin),
         safety_order_volume: formData.safety_order_volume,
-        safety_order_step_percentage: formData.safety_order_step_percentage,
-        max_safety_orders: parseInt(formData.max_safety_orders),
-        cooldown: parseInt(formData.cooldown),
-        close_deals_timeout: parseInt(formData.close_deals_timeout),
-        active_safety_orders_count: parseInt(formData.active_safety_orders_count),
         base_order_volume_type: formData.base_order_volume_type,
         safety_order_volume_type: formData.safety_order_volume_type,
+        max_safety_orders: parseInt(formData.max_safety_orders),
+        active_safety_orders_count: parseInt(formData.active_safety_orders_count),
+        safety_order_step_percentage: formData.safety_order_step_percentage,
+        take_profit: formData.take_profit,
         take_profit_type: formData.take_profit_type,
         min_profit_type: formData.min_profit_type,
         martingale_volume_coefficient: formData.martingale_volume_coefficient,
         martingale_step_coefficient: formData.martingale_step_coefficient,
-        take_profit_steps: defaultTakeProfitSteps,
+        cooldown: parseInt(formData.cooldown),
+        close_deals_timeout: parseInt(formData.close_deals_timeout),
         strategy_list: defaultStrategyList
       };
 
       const data = await hftBotService.createDcaBot(payload);
       setResponse(data);
+      setCurrentStep(3); // Success step
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'An error occurred while creating the bot');
+      setCurrentStep(3); // Show error state
+      if (err.response?.data?.error_attributes) {
+        const errorMessages = Object.entries(err.response.data.error_attributes)
+          .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+          .join('; ');
+        setError(`Validation errors: ${errorMessages}`);
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError(err.message || 'An error occurred while creating the bot');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const nextStep = () => setCurrentStep(currentStep + 1);
+  const prevStep = () => setCurrentStep(currentStep - 1);
+
   const renderInput = (id, label, type = 'text', step = '1', min = '0.1', helpText = '', disabled = false) => (
-    <div className="mb-4">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-900 mb-1">
-        {label}
-      </label>
+    <div className="mb-6">
+      <div className="flex justify-between items-center mb-1">
+        <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+          {label}
+        </label>
+        {helpText && (
+          <span className="text-xs text-gray-500">{helpText}</span>
+        )}
+      </div>
       <div className="relative rounded-md shadow-sm">
         <input
           type={type}
@@ -112,175 +109,371 @@ const HomePage = () => {
           name={id}
           step={step}
           min={min}
-          value={formData[id]}
+          value={formData[id] || ''}
           onChange={handleChange}
           disabled={disabled}
-          className={`block w-full px-4 py-2 ${disabled ? 'bg-oxblood-950 text-gray-900' : 'bg-oxblood-800 text-gray-900 border-oxblood-700'} rounded-md focus:ring-yellow-500 focus:border-yellow-500 border`}
+          className={`block w-full px-4 py-2 ${disabled ? 'bg-gray-100 text-gray-500' : 'bg-white text-gray-900 border-gray-300'} rounded-md border focus:ring-blue-500 focus:border-blue-500`}
         />
         {['base_order_volume', 'safety_order_volume'].includes(id) && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <span className="text-gray-900">USDT</span>
+            <span className="text-gray-500">USDT</span>
           </div>
         )}
         {['take_profit', 'stop_loss', 'profit_margin', 'safety_order_step_percentage'].includes(id) && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <span className="text-gray-900">%</span>
+            <span className="text-gray-500">%</span>
           </div>
         )}
       </div>
-      {helpText && <p className="mt-1 text-xs text-gray-900">{helpText}</p>}
+    </div>
+  );
+
+  const renderStepIndicator = () => (
+    <div className="flex items-center justify-center mb-8">
+      <div className={`flex items-center ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 1 ? 'bg-blue-100' : 'bg-gray-100'} mr-2`}>
+          {currentStep > 1 ? (
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <span>1</span>
+          )}
+        </div>
+        <span className="text-sm font-medium">Basic Info</span>
+      </div>
+      
+      <div className={`flex-1 h-0.5 mx-2 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+      
+      <div className={`flex items-center ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 2 ? 'bg-blue-100' : 'bg-gray-100'} mr-2`}>
+          {currentStep > 2 ? (
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <span>2</span>
+          )}
+        </div>
+        <span className="text-sm font-medium">Trading Settings</span>
+      </div>
+      
+      <div className={`flex-1 h-0.5 mx-2 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+      
+      <div className={`flex items-center ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 3 ? 'bg-blue-100' : 'bg-gray-100'} mr-2`}>
+          <span>3</span>
+        </div>
+        <span className="text-sm font-medium">Confirmation</span>
+      </div>
+    </div>
+  );
+
+  const renderStep1 = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Basic Information</h2>
+        <p className="text-sm text-gray-500">Configure the basic settings for your DCA bot</p>
+      </div>
+      
+      {renderInput('name', 'Bot Name', 'text', '', '', 'Give your bot a descriptive name')}
+      
+      <div>
+        <label htmlFor="pairs" className="block text-sm font-medium text-gray-700 mb-1">
+          Trading Pair
+        </label>
+        <select
+          id="pairs"
+          name="pairs"
+          value={formData.pairs}
+          onChange={handleChange}
+          required
+          className="block w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 rounded-md focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="USDT_BTC">BTC/USDT</option>
+          <option value="USDT_ETH">ETH/USDT</option>
+          <option value="USDT_BNB">BNB/USDT</option>
+          <option value="USDT_SOL">SOL/USDT</option>
+          <option value="USDT_ADA">ADA/USDT</option>
+          <option value="USDT_DOT">DOT/USDT</option>
+        </select>
+      </div>
+
+      {renderInput('account_id', 'Account ID', 'number', '1', '1', 'Your exchange account identifier')}
+      
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={nextStep}
+          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Next: Trading Settings
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Trading Parameters</h2>
+        <p className="text-sm text-gray-500">Configure your DCA strategy parameters</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {renderInput('base_order_volume', 'Base Order', 'number', '0.01', '0', 'Initial order size')}
+        {renderInput('safety_order_volume', 'Safety Order', 'number', '0.01', '0', 'Additional order size')}
+        {renderInput('take_profit', 'Take Profit', 'number', '0.01', '0.1', 'Target profit percentage')}
+        {renderInput('safety_order_step_percentage', 'Price Drop Step', 'number', '0.01', '0.1', 'Before next safety order')}
+        {renderInput('max_safety_orders', 'Max Safety Orders', 'number', '1', '1', 'Maximum safety orders')}
+        {renderInput('active_safety_orders_count', 'Active Safety Orders', 'number', '1', '1', 'Concurrent safety orders')}
+      </div>
+      
+      <div className="border-t border-gray-200 pt-4">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+        >
+          {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
+          <svg className={`ml-1 w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {showAdvanced && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {renderInput('cooldown', 'Cooldown', 'number', '1', '0', 'Delay between deals (seconds)')}
+            {renderInput('close_deals_timeout', 'Close Timeout', 'number', '1', '0', 'Timeout for closing (seconds)')}
+            {renderInput('martingale_volume_coefficient', 'Volume Coefficient', 'number', '0.1', '1', 'Multiplier for safety orders')}
+            {renderInput('martingale_step_coefficient', 'Step Coefficient', 'number', '0.1', '1', 'Multiplier for price steps')}
+          </div>
+        )}
+      </div>
+      
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={prevStep}
+          className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={nextStep}
+          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Review & Create
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderStep3 = () => (
+    <div className="space-y-6">
+      {response ? (
+        <div className="text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="mt-3 text-xl font-semibold text-gray-900">Bot Successfully Created!</h2>
+          <p className="mt-2 text-sm text-gray-500">Your DCA trading bot is now active and ready to trade.</p>
+          
+          <div className="mt-6 bg-gray-50 p-4 rounded-md text-left">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Bot Details</h3>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex justify-between">
+                <span>Bot Name:</span>
+                <span className="font-medium">{response.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Trading Pair:</span>
+                <span className="font-medium">{response.pairs}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Status:</span>
+                <span className="font-medium text-green-600">Active</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentStep(1);
+                setResponse(null);
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Create Another Bot
+            </button>
+          </div>
+        </div>
+      ) : error ? (
+        <div className="text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+            <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 className="mt-3 text-xl font-semibold text-gray-900">Error Creating Bot</h2>
+          <p className="mt-2 text-sm text-gray-500">{error}</p>
+          
+          <div className="mt-6 flex justify-center gap-4">
+            <button
+              type="button"
+              onClick={prevStep}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Back to Settings
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentStep(1);
+                setError(null);
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Start Over
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Review Your Configuration</h2>
+            <p className="text-sm text-gray-500">Please review your settings before creating the bot</p>
+          </div>
+          
+          <div className="bg-gray-50 p-6 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Basic Information</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Bot Name:</span>
+                    <span className="font-medium">{formData.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Trading Pair:</span>
+                    <span className="font-medium">{formData.pairs}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Account ID:</span>
+                    <span className="font-medium">{formData.account_id}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Trading Parameters</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Base Order:</span>
+                    <span className="font-medium">{formData.base_order_volume} USDT</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Safety Order:</span>
+                    <span className="font-medium">{formData.safety_order_volume} USDT</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Take Profit:</span>
+                    <span className="font-medium">{formData.take_profit}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Max Safety Orders:</span>
+                    <span className="font-medium">{formData.max_safety_orders}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {showAdvanced && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Advanced Settings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Cooldown:</span>
+                      <span className="font-medium">{formData.cooldown} seconds</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Close Timeout:</span>
+                      <span className="font-medium">{formData.close_deals_timeout} seconds</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Volume Coefficient:</span>
+                      <span className="font-medium">{formData.martingale_volume_coefficient}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Step Coefficient:</span>
+                      <span className="font-medium">{formData.martingale_step_coefficient}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between">
+            <button
+              type="button"
+              onClick={prevStep}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-75 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating Bot...
+                </>
+              ) : (
+                'Confirm & Create Bot'
+              )}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-oxblood-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-yellow-400">Create DCA Trading Bot</h1>
-          <p className="mt-2 text-lg text-gray-900">
-            Configure your automated trading strategy with our smart defaults
+          <h1 className="text-3xl font-bold text-gray-900">Create DCA Trading Bot</h1>
+          <p className="mt-2 text-lg text-gray-600">
+            Automate your trading strategy with Dollar Cost Averaging
           </p>
         </div>
 
-        <div className="bg-oxblood-800 shadow-xl rounded-lg overflow-hidden border border-oxblood-700">
-          <form onSubmit={handleSubmit} className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Basic Information */}
-              <div className="md:col-span-2">
-                <h2 className="text-lg font-medium text-yellow-400 mb-4 pb-2 border-b border-oxblood-700">
-                  Basic Configuration
-                </h2>
-              </div>
-              
-              {renderInput('name', 'Bot Name *', 'text', '', '', 'Give your bot a descriptive name')}
-              
-              <div>
-                <label htmlFor="pairs" className="block text-sm font-medium text-gray-900 mb-1">
-                  Trading Pair *
-                </label>
-                <select
-                  id="pairs"
-                  name="pairs"
-                  value={formData.pairs}
-                  onChange={handleChange}
-                  required
-                  className="block w-full px-4 py-2 bg-oxblood-800 border border-oxblood-700 text-gray-900 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
-                >
-                  <option value="BTC_USDT">BTC/USDT</option>
-                  <option value="ETH_USDT">ETH/USDT</option>
-                  <option value="BNB_USDT">BNB/USDT</option>
-                  <option value="SOL_USDT">SOL/USDT</option>
-                  <option value="ADA_USDT">ADA/USDT</option>
-                  <option value="DOT_USDT">DOT/USDT</option>
-                </select>
-              </div>
-
-              {renderInput('account_id', 'Account ID *', 'number', '1', '1', 'Your exchange account identifier')}
-              
-              {/* Trading Parameters */}
-              <div className="md:col-span-2 mt-4">
-                <h2 className="text-lg font-medium text-yellow-400 mb-4 pb-2 border-b border-oxblood-700">
-                  Trading Parameters
-                </h2>
-              </div>
-              
-              {renderInput('base_order_volume', 'Base Order Volume (USDT) *', 'number', '0.01', '10', 'Initial order size in USDT')}
-              {renderInput('take_profit', 'Take Profit (%) *', 'number', '0.01', '0.1', 'Target profit percentage')}
-              {renderInput('stop_loss', 'Stop Loss (%) *', 'number', '0.01', '0.1', 'Maximum loss percentage')}
-              {renderInput('profit_margin', 'Profit Margin (%) *', 'number', '0.01', '0.1', 'Minimum profit percentage')}
-              
-              {/* Advanced Options Toggle */}
-              <div className="md:col-span-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center text-sm font-medium text-yellow-500 hover:text-yellow-400 focus:outline-none transition-colors"
-                >
-                  {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-                  <svg
-                    className={`ml-1 h-5 w-5 transform ${showAdvanced ? 'rotate-180' : ''}`}
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Advanced Options */}
-              {showAdvanced && (
-                <>
-                  {renderInput('safety_order_volume', 'Safety Order Volume (USDT)', 'number', '0.01', '1', 'Additional order size in USDT')}
-                  {renderInput('safety_order_step_percentage', 'Safety Order Step (%)', 'number', '0.01', '0.1', 'Price drop percentage before next safety order')}
-                </>
-              )}
-            </div>
-
-            <div className="mt-8">
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium ${
-                  loading ? 'bg-gray-600' : 'bg-yellow-500 hover:bg-yellow-600'
-                } text-oxblood-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200`}
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-oxblood-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating Bot...
-                  </>
-                ) : (
-                  'Launch Trading Bot'
-                )}
-              </button>
-            </div>
-          </form>
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          <div className="p-6 sm:p-8">
+            {renderStepIndicator()}
+            
+            <form onSubmit={handleSubmit}>
+              {currentStep === 1 && renderStep1()}
+              {currentStep === 2 && renderStep2()}
+              {currentStep === 3 && renderStep3()}
+            </form>
+          </div>
         </div>
-
-        {/* Response and Error Messages */}
-        {response && (
-          <div className="mt-6 p-4 bg-green-900 bg-opacity-20 border-l-4 border-green-400 rounded-lg">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-300">Bot Successfully Created!</h3>
-                <div className="mt-2 text-sm text-green-200">
-                  <p>Your trading bot is now active. Here are the details:</p>
-                  <pre className="mt-2 p-2 bg-green-900 bg-opacity-30 rounded text-xs overflow-x-auto">
-                    {JSON.stringify(response, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-6 p-4 bg-red-900 bg-opacity-20 border-l-4 border-red-400 rounded-lg">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-300">Error Creating Bot</h3>
-                <div className="mt-2 text-sm text-red-200">
-                  <p>{error}</p>
-                  <p className="mt-1">Please check your settings and try again.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
