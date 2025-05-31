@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
-  account_id: '33202732',
-  name: 'My DCA Bot',
+  account_id: '33203501',
+  name: 'BOT',
   pairs: 'USDT_BTC',
   base_order_volume: '10.0',
   safety_order_volume: '30.0',
