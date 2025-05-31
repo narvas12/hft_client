@@ -6,11 +6,44 @@ const createDcaBot = async (botData) => {
     const response = await axiosInstance.post(API.HFT_BOT.CREATE_BOT, botData);
     return response.data;
   } catch (error) {
-    // Throw error for the caller to handle
+    throw error.response?.data || error.message || 'Unknown error occurred';
+  }
+};
+
+const getDcaBot = async (botId) => {
+  try {
+    const response = await axiosInstance.get(API.HFT_BOT.GET_BOT(botId));
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message || 'Unknown error occurred';
+  }
+};
+
+const listDcaBots = async (queryParams = {}) => {
+  try {
+    const response = await axiosInstance.get(API.HFT_BOT.LIST_BOTS, {
+      params: queryParams,
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message || 'Unknown error occurred';
+  }
+};
+
+const getStrategyList = async (queryParams = {}) => {
+  try {
+    const response = await axiosInstance.get(API.HFT_BOT.GET_STRATEGY_LIST, {
+      params: queryParams,
+    });
+    return response.data;
+  } catch (error) {
     throw error.response?.data || error.message || 'Unknown error occurred';
   }
 };
 
 export default {
   createDcaBot,
+  getDcaBot,
+  listDcaBots,
+  getStrategyList,
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import LOGO from '../../assets/images/logo.png'; 
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -17,78 +18,159 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-oxblood-900 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <svg className="h-8 w-8 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2l9 4.9v9.8L12 22l-9-5.3V6.9L12 2z" />
-              </svg>
-              <span className="ml-2 font-bold text-lg text-gray-800">HFT Bot Platform</span>
+              <div className="flex items-center justify-center h-10 w-10 rounded-full bg-yellow-500">
+                <img src={LOGO} alt=""  className='rounded-full'/>
+              </div>
+              <span className="ml-3 font-bold text-xl text-yellow-400">HFT BOT</span>
             </Link>
           </div>
 
           {/* Desktop Links */}
-          <div className="hidden md:flex space-x-6">
-            <Link to="/bots/create" className="text-gray-600 hover:text-indigo-600 font-medium">Create Bot</Link>
-            <Link to="/bots/list" className="text-gray-600 hover:text-indigo-600 font-medium">My Bots</Link>
-            <Link to="/exchange/accounts" className="text-gray-600 hover:text-indigo-600 font-medium">Exchange Accounts</Link>
-            {user ? (
-              <Link to="/settings" className="text-gray-600 hover:text-indigo-600 font-medium">Settings</Link>
-            ) : (
-              <Link to="/login" className="text-gray-600 hover:text-indigo-600 font-medium">Login</Link>
+          <div className="hidden md:flex space-x-8">
+            <Link 
+              to="/" 
+              className="text-gray-900 hover:text-yellow-400 font-medium transition duration-200"
+            >
+              Create Bot
+            </Link>
+            <Link 
+              to="/bots/list" 
+              className="text-gray-900 hover:text-yellow-400 font-medium transition duration-200"
+            >
+              My Bots
+            </Link>
+            <Link 
+              to="/exchange/accounts" 
+              className="text-gray-900 hover:text-yellow-400 font-medium transition duration-200"
+            >
+              Exchange Accounts
+            </Link>
+            {user && (
+              <Link 
+                to="/settings" 
+                className="text-gray-900 hover:text-yellow-400 font-medium transition duration-200"
+              >
+                Settings
+              </Link>
             )}
           </div>
 
           {/* Auth Controls */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-6">
             {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-700">Welcome, {user.username}</span>
+              <div className="flex items-center space-x-6">
+                <span className="text-gray-900">Welcome, <span className="text-yellow-400">{user.username}</span></span>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow transition"
+                  className="px-4 py-2 text-oxblood-900 bg-yellow-500 hover:bg-yellow-600 rounded-md shadow transition duration-200 font-medium"
                 >
                   Logout
                 </button>
               </div>
             ) : (
-              <Link to="/register" className="px-4 py-2 text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-600 hover:text-white transition">
-                Register
-              </Link>
+              <>
+                <Link 
+                  to="/login" 
+                  className="text-gray-900 hover:text-yellow-400 font-medium transition duration-200"
+                >
+                  Login
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="px-4 py-2 text-oxblood-900 bg-yellow-500 hover:bg-yellow-600 rounded-md shadow transition duration-200 font-medium"
+                >
+                  Register
+                </Link>
+              </>
             )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <button onClick={toggleMobileMenu} className="focus:outline-none">
-              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 6h16M4 12h16M4 18h16"></path>
-              </svg>
+            <button 
+              onClick={toggleMobileMenu} 
+              className="focus:outline-none p-1 rounded-md text-gray-900 hover:text-yellow-400 hover:bg-oxblood-800 transition duration-200"
+            >
+              {isMobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
-      <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} bg-white border-t border-gray-200`}>
-        <div className="px-2 pt-2 pb-3 space-y-2">
-          <Link to="/bots/create" className="block px-4 py-2 text-gray-700 hover:text-indigo-600">Create Bot</Link>
-          <Link to="/bots/list" className="block px-4 py-2 text-gray-700 hover:text-indigo-600">My Bots</Link>
-          <Link to="/exchange/accounts" className="block px-4 py-2 text-gray-700 hover:text-indigo-600">Exchange Accounts</Link>
+      <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} bg-oxblood-800 shadow-xl`}>
+        <div className="px-2 pt-2 pb-4 space-y-2">
+          <Link 
+            to="/bots/create" 
+            className="block px-4 py-3 text-gray-900 hover:text-yellow-400 hover:bg-oxblood-700 rounded-md transition duration-200"
+            onClick={toggleMobileMenu}
+          >
+            Create Bot
+          </Link>
+          <Link 
+            to="/bots/list" 
+            className="block px-4 py-3 text-gray-900 hover:text-yellow-400 hover:bg-oxblood-700 rounded-md transition duration-200"
+            onClick={toggleMobileMenu}
+          >
+            My Bots
+          </Link>
+          <Link 
+            to="/exchange/accounts" 
+            className="block px-4 py-3 text-gray-900 hover:text-yellow-400 hover:bg-oxblood-700 rounded-md transition duration-200"
+            onClick={toggleMobileMenu}
+          >
+            Exchange Accounts
+          </Link>
           {user && (
-            <Link to="/settings" className="block px-4 py-2 text-gray-700 hover:text-indigo-600">Settings</Link>
+            <Link 
+              to="/settings" 
+              className="block px-4 py-3 text-gray-900 hover:text-yellow-400 hover:bg-oxblood-700 rounded-md transition duration-200"
+              onClick={toggleMobileMenu}
+            >
+              Settings
+            </Link>
           )}
           {user ? (
-            <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-gray-700 hover:text-indigo-600">Logout</button>
+            <button 
+              onClick={() => {
+                handleLogout();
+                toggleMobileMenu();
+              }} 
+              className="w-full text-left px-4 py-3 text-gray-900 hover:text-yellow-400 hover:bg-oxblood-700 rounded-md transition duration-200"
+            >
+              Logout
+            </button>
           ) : (
             <>
-              <Link to="/login" className="block px-4 py-2 text-gray-700 hover:text-indigo-600">Login</Link>
-              <Link to="/register" className="block px-4 py-2 text-indigo-600 border border-indigo-600 rounded-md text-center">Register</Link>
+              <Link 
+                to="/login" 
+                className="block px-4 py-3 text-gray-900 hover:text-yellow-400 hover:bg-oxblood-700 rounded-md transition duration-200"
+                onClick={toggleMobileMenu}
+              >
+                Login
+              </Link>
+              <Link 
+                to="/register" 
+                className="block px-4 py-3 text-center text-oxblood-900 bg-yellow-500 hover:bg-yellow-600 rounded-md shadow transition duration-200 font-medium"
+                onClick={toggleMobileMenu}
+              >
+                Register
+              </Link>
             </>
           )}
         </div>

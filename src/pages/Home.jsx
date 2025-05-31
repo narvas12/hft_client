@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
-  // User provided fields
-  account_id: '',
-  name: '',
+  account_id: '548644752',
+  name: 'BOT',
   pairs: 'BTC_USDT',
   base_order_volume: '100.00',
   take_profit: '2.00',
@@ -12,8 +11,6 @@ const initialFormState = {
   profit_margin: '1.00',
   safety_order_volume: '30.00',
   safety_order_step_percentage: '1.00',
-
-  // Default fields (hidden from user)
   max_safety_orders: '4',
   cooldown: '60',
   close_deals_timeout: '60',
@@ -70,7 +67,6 @@ const HomePage = () => {
     setResponse(null);
 
     try {
-      // Prepare the payload with proper types
       const payload = {
         account_id: Number(formData.account_id),
         name: formData.name,
@@ -81,8 +77,6 @@ const HomePage = () => {
         profit_margin: parseFloat(formData.profit_margin),
         safety_order_volume: formData.safety_order_volume,
         safety_order_step_percentage: formData.safety_order_step_percentage,
-        
-        // Default values that aren't shown to user
         max_safety_orders: parseInt(formData.max_safety_orders),
         cooldown: parseInt(formData.cooldown),
         close_deals_timeout: parseInt(formData.close_deals_timeout),
@@ -93,8 +87,6 @@ const HomePage = () => {
         min_profit_type: formData.min_profit_type,
         martingale_volume_coefficient: formData.martingale_volume_coefficient,
         martingale_step_coefficient: formData.martingale_step_coefficient,
-        
-        // Static configuration
         take_profit_steps: defaultTakeProfitSteps,
         strategy_list: defaultStrategyList
       };
@@ -110,7 +102,7 @@ const HomePage = () => {
 
   const renderInput = (id, label, type = 'text', step = '1', min = '0.1', helpText = '', disabled = false) => (
     <div className="mb-4">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-900 mb-1">
         {label}
       </label>
       <div className="relative rounded-md shadow-sm">
@@ -123,39 +115,39 @@ const HomePage = () => {
           value={formData[id]}
           onChange={handleChange}
           disabled={disabled}
-          className={`block w-full px-4 py-2 border ${disabled ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:ring-blue-500 focus:border-blue-500`}
+          className={`block w-full px-4 py-2 ${disabled ? 'bg-oxblood-950 text-gray-900' : 'bg-oxblood-800 text-gray-900 border-oxblood-700'} rounded-md focus:ring-yellow-500 focus:border-yellow-500 border`}
         />
         {['base_order_volume', 'safety_order_volume'].includes(id) && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <span className="text-gray-500">USDT</span>
+            <span className="text-gray-900">USDT</span>
           </div>
         )}
         {['take_profit', 'stop_loss', 'profit_margin', 'safety_order_step_percentage'].includes(id) && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <span className="text-gray-500">%</span>
+            <span className="text-gray-900">%</span>
           </div>
         )}
       </div>
-      {helpText && <p className="mt-1 text-xs text-gray-500">{helpText}</p>}
+      {helpText && <p className="mt-1 text-xs text-gray-900">{helpText}</p>}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-oxblood-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create DCA Trading Bot</h1>
-          <p className="mt-2 text-lg text-gray-600">
+          <h1 className="text-3xl font-bold text-yellow-400">Create DCA Trading Bot</h1>
+          <p className="mt-2 text-lg text-gray-900">
             Configure your automated trading strategy with our smart defaults
           </p>
         </div>
 
-        <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+        <div className="bg-oxblood-800 shadow-xl rounded-lg overflow-hidden border border-oxblood-700">
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Basic Information */}
               <div className="md:col-span-2">
-                <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-yellow-400 mb-4 pb-2 border-b border-oxblood-700">
                   Basic Configuration
                 </h2>
               </div>
@@ -163,7 +155,7 @@ const HomePage = () => {
               {renderInput('name', 'Bot Name *', 'text', '', '', 'Give your bot a descriptive name')}
               
               <div>
-                <label htmlFor="pairs" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="pairs" className="block text-sm font-medium text-gray-900 mb-1">
                   Trading Pair *
                 </label>
                 <select
@@ -172,7 +164,7 @@ const HomePage = () => {
                   value={formData.pairs}
                   onChange={handleChange}
                   required
-                  className="block w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full px-4 py-2 bg-oxblood-800 border border-oxblood-700 text-gray-900 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
                 >
                   <option value="BTC_USDT">BTC/USDT</option>
                   <option value="ETH_USDT">ETH/USDT</option>
@@ -187,7 +179,7 @@ const HomePage = () => {
               
               {/* Trading Parameters */}
               <div className="md:col-span-2 mt-4">
-                <h2 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-yellow-400 mb-4 pb-2 border-b border-oxblood-700">
                   Trading Parameters
                 </h2>
               </div>
@@ -202,7 +194,7 @@ const HomePage = () => {
                 <button
                   type="button"
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center text-sm font-medium text-blue-600 hover:text-blue-500 focus:outline-none"
+                  className="flex items-center text-sm font-medium text-yellow-500 hover:text-yellow-400 focus:outline-none transition-colors"
                 >
                   {showAdvanced ? 'Hide' : 'Show'} Advanced Options
                   <svg
@@ -229,13 +221,13 @@ const HomePage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white ${
-                  loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
-                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200`}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium ${
+                  loading ? 'bg-gray-600' : 'bg-yellow-500 hover:bg-yellow-600'
+                } text-oxblood-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors duration-200`}
               >
                 {loading ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-oxblood-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -251,7 +243,7 @@ const HomePage = () => {
 
         {/* Response and Error Messages */}
         {response && (
-          <div className="mt-6 p-4 bg-green-50 border-l-4 border-green-400 rounded-lg">
+          <div className="mt-6 p-4 bg-green-900 bg-opacity-20 border-l-4 border-green-400 rounded-lg">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -259,10 +251,10 @@ const HomePage = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">Bot Successfully Created!</h3>
-                <div className="mt-2 text-sm text-green-700">
+                <h3 className="text-sm font-medium text-green-300">Bot Successfully Created!</h3>
+                <div className="mt-2 text-sm text-green-200">
                   <p>Your trading bot is now active. Here are the details:</p>
-                  <pre className="mt-2 p-2 bg-green-100 rounded text-xs overflow-x-auto">
+                  <pre className="mt-2 p-2 bg-green-900 bg-opacity-30 rounded text-xs overflow-x-auto">
                     {JSON.stringify(response, null, 2)}
                   </pre>
                 </div>
@@ -272,7 +264,7 @@ const HomePage = () => {
         )}
 
         {error && (
-          <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-lg">
+          <div className="mt-6 p-4 bg-red-900 bg-opacity-20 border-l-4 border-red-400 rounded-lg">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -280,8 +272,8 @@ const HomePage = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error Creating Bot</h3>
-                <div className="mt-2 text-sm text-red-700">
+                <h3 className="text-sm font-medium text-red-300">Error Creating Bot</h3>
+                <div className="mt-2 text-sm text-red-200">
                   <p>{error}</p>
                   <p className="mt-1">Please check your settings and try again.</p>
                 </div>
