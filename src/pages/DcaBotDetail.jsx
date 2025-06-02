@@ -8,6 +8,7 @@ const DcaBotDetail = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [isEditing, setIsEditing] = useState(false);
+  const [showActiveDeals, setShowActiveDeals] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -57,6 +58,21 @@ const DcaBotDetail = () => {
     console.log('Deleting bot');
   };
 
+  const formatCurrency = (value) => {
+    return parseFloat(value).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8
+    });
+  };
+
+  const formatPercentage = (value) => {
+    return parseFloat(value).toFixed(2) + '%';
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -76,7 +92,8 @@ const DcaBotDetail = () => {
                   {bot.is_enabled ? 'Active' : 'Inactive'}
                 </span>
                 <span className="text-xs text-gray-500">ID: {bot.id}</span>
-                <span className="text-xs text-gray-500">Created: {new Date(bot.created_at).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-500">Created: {formatDate(bot.created_at)}</span>
+                <span className="text-xs text-gray-500">Strategy: {bot.strategy_list[0].strategy}</span>
               </div>
             </div>
           </div>
@@ -128,6 +145,16 @@ const DcaBotDetail = () => {
               >
                 Performance
               </button>
+              <button
+                onClick={() => setActiveTab('events')}
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${
+                  activeTab === 'events'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Events
+              </button>
             </nav>
           </div>
 
@@ -151,7 +178,22 @@ const DcaBotDetail = () => {
                     <DetailItem 
                       icon="calendar"
                       label="Created At"
-                      value={new Date(bot.created_at).toLocaleString()}
+                      value={formatDate(bot.created_at)}
+                    />
+                    <DetailItem 
+                      icon="update"
+                      label="Last Updated"
+                      value={formatDate(bot.updated_at)}
+                    />
+                    <DetailItem 
+                      icon="strategy"
+                      label="Strategy"
+                      value={bot.strategy_list.map(s => s.strategy).join(', ')}
+                    />
+                    <DetailItem 
+                      icon="market"
+                      label="Market Type"
+                      value={bot.active_deals?.[0]?.market_type || 'spot'}
                     />
                   </div>
                 </div>
@@ -171,8 +213,24 @@ const DcaBotDetail = () => {
                     <DetailItem 
                       icon="dollar-sign"
                       label="Total Profit"
-                      value={`$${bot.finished_deals_profit_usd} USDT`}
+                      value={`$${formatCurrency(bot.finished_deals_profit_usd)} USDT`}
                     />
+                    <DetailItem 
+                      icon="profit"
+                      label="Active Deals Profit"
+                      value={`$${formatCurrency(bot.active_deals_usd_profit)}`}
+                    />
+                    <DetailItem 
+                      icon="reinvest"
+                      label="Reinvesting Percentage"
+                      value={formatPercentage(bot.reinvesting_percentage)}
+                    />
+                    <button
+                      onClick={() => setShowActiveDeals(!showActiveDeals)}
+                      className="mt-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition duration-200 text-sm font-medium"
+                    >
+                      {showActiveDeals ? 'Hide Active Deals' : 'View Active Deals'}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -186,22 +244,32 @@ const DcaBotDetail = () => {
                     <DetailItem 
                       icon="layers"
                       label="Base Order Volume"
-                      value={`$${bot.base_order_volume} USDT`}
+                      value={`$${formatCurrency(bot.base_order_volume)} ${bot.base_order_volume_type === 'quote_currency' ? 'USDT' : bot.pairs[0].split('_')[1]}`}
                     />
                     <DetailItem 
                       icon="safety-check"
                       label="Safety Order Volume"
-                      value={`$${bot.safety_order_volume} USDT`}
+                      value={`$${formatCurrency(bot.safety_order_volume)} ${bot.safety_order_volume_type === 'quote_currency' ? 'USDT' : bot.pairs[0].split('_')[1]}`}
                     />
                     <DetailItem 
                       icon="trending-up"
                       label="Take Profit"
-                      value={`${bot.take_profit}%`}
+                      value={formatPercentage(bot.take_profit)}
                     />
                     <DetailItem 
                       icon="shield"
                       label="Stop Loss"
-                      value={bot.stop_loss_percentage === "0.0" ? 'Disabled' : `${bot.stop_loss_percentage}%`}
+                      value={bot.stop_loss_percentage === "0.0" ? 'Disabled' : formatPercentage(bot.stop_loss_percentage)}
+                    />
+                    <DetailItem 
+                      icon="steps"
+                      label="Safety Order Step"
+                      value={formatPercentage(bot.safety_order_step_percentage)}
+                    />
+                    <DetailItem 
+                      icon="cooldown"
+                      label="Cooldown"
+                      value={`${bot.cooldown} seconds`}
                     />
                   </div>
                 </div>
@@ -219,14 +287,24 @@ const DcaBotDetail = () => {
                       value={bot.max_safety_orders}
                     />
                     <DetailItem 
-                      icon="clock"
-                      label="Cooldown"
-                      value={`${bot.cooldown} seconds`}
+                      icon="active-orders"
+                      label="Active Safety Orders"
+                      value={bot.active_safety_orders_count}
                     />
                     <DetailItem 
-                      icon="zap"
-                      label="Martingale Coefficient"
+                      icon="martingale"
+                      label="Martingale Volume Coefficient"
                       value={bot.martingale_volume_coefficient}
+                    />
+                    <DetailItem 
+                      icon="martingale-step"
+                      label="Martingale Step Coefficient"
+                      value={bot.martingale_step_coefficient}
+                    />
+                    <DetailItem 
+                      icon="risk"
+                      label="Risk Reduction Percentage"
+                      value={formatPercentage(bot.risk_reduction_percentage)}
                     />
                   </div>
                 </div>
@@ -252,7 +330,7 @@ const DcaBotDetail = () => {
                     <StatCard 
                       icon="dollar-sign"
                       title="Total Profit"
-                      value={`$${bot.finished_deals_profit_usd}`}
+                      value={`$${formatCurrency(bot.finished_deals_profit_usd)}`}
                       currency="USDT"
                     />
                   </div>
@@ -270,8 +348,100 @@ const DcaBotDetail = () => {
                 </div>
               </div>
             )}
+
+            {activeTab === 'events' && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Bot Events</h2>
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 max-h-96 overflow-y-auto">
+                  {bot.bot_events.map((event, index) => (
+                    <div key={index} className="py-2 border-b border-gray-200 last:border-b-0">
+                      <div className="flex justify-between items-start">
+                        <p className="text-sm font-medium text-gray-800">{event.message}</p>
+                        <span className="text-xs text-gray-500">{formatDate(event.created_at)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Active Deals Section */}
+        {showActiveDeals && bot.active_deals && bot.active_deals.length > 0 && (
+          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Deals</h2>
+              {bot.active_deals.map((deal, index) => (
+                <div key={deal.id} className="mb-6 last:mb-0 border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-medium text-gray-900">
+                      Deal #{index + 1}: {deal.pair} ({deal.status})
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      Created: {formatDate(deal.created_at)}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Buy Details</h4>
+                      <p className="text-sm">
+                        Amount: {formatCurrency(deal.bought_amount)} {deal.to_currency}
+                      </p>
+                      <p className="text-sm">
+                        Volume: ${formatCurrency(deal.bought_volume)}
+                      </p>
+                      <p className="text-sm">
+                        Avg Price: ${formatCurrency(deal.bought_average_price)}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Profit/Loss</h4>
+                      <p className={`text-sm ${deal.actual_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        Current: ${formatCurrency(deal.actual_usd_profit)} ({formatPercentage(deal.actual_profit_percentage)})
+                      </p>
+                      <p className="text-sm">
+                        Projected: ${formatCurrency(deal.usd_final_profit)}
+                      </p>
+                      <p className="text-sm">
+                        Take Profit: ${formatCurrency(deal.take_profit_price)} ({formatPercentage(deal.take_profit)})
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Current Status</h4>
+                      <p className="text-sm">
+                        Current Price: ${formatCurrency(deal.current_price)}
+                      </p>
+                      <p className="text-sm">
+                        Safety Orders: {deal.current_active_safety_orders_count}/{deal.max_safety_orders}
+                      </p>
+                      <p className="text-sm">
+                        {deal.cancellable ? 'Cancellable' : 'Not cancellable'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">Order Steps</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                        Base: ${formatCurrency(deal.base_order_average_price)}
+                      </div>
+                      {deal.crypto_widget?.buySteps?.map((step, i) => (
+                        <div key={i} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                          SO {i + 1}: ${formatCurrency(step.price)} ({step.filled || '0%'})
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mt-8">
@@ -334,6 +504,12 @@ const DcaBotDetail = () => {
                     value={bot.take_profit}
                     onChange={() => {}}
                   />
+                  <FormField 
+                    label="Safety Order Step (%)"
+                    type="number"
+                    value={bot.safety_order_step_percentage}
+                    onChange={() => {}}
+                  />
                 </div>
                 <div className="space-y-4">
                   <FormField 
@@ -354,6 +530,12 @@ const DcaBotDetail = () => {
                     value={bot.stop_loss_percentage === "0.0" ? '' : bot.stop_loss_percentage}
                     onChange={() => {}}
                     placeholder="0 for disabled"
+                  />
+                  <FormField 
+                    label="Cooldown (seconds)"
+                    type="number"
+                    value={bot.cooldown}
+                    onChange={() => {}}
                   />
                 </div>
               </div>
@@ -381,92 +563,71 @@ const DcaBotDetail = () => {
 };
 
 const DetailItem = ({ icon, label, value }) => {
-  const getIconPath = () => {
-    switch(icon) {
-      case 'currency-exchange':
-        return "M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z";
-      case 'account-balance':
-        return "M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z";
-      case 'strategy':
-        return "M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z";
-      case 'layers':
-        return "M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25";
-      case 'safety-check':
-        return "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z";
-      case 'trending-up':
-        return "M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941";
-      case 'activity':
-        return "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z";
-      case 'check-circle':
-        return "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z";
-      case 'dollar-sign':
-        return "M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z";
-      case 'shield':
-        return "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z";
-      case 'settings':
-        return "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z";
-      case 'repeat':
-        return "M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99";
-      case 'clock':
-        return "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z";
-      case 'zap':
-        return "M13 10V3L4 14h7v7l9-11h-7z";
-      case 'calendar':
-        return "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5";
-      default:
-        return "M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z";
-    }
+  // Simple icon mapping - you can expand this or use a proper icon library
+  const getIcon = (iconName) => {
+    const icons = {
+      'account-balance': 'M4 6h16v10H4V6zm2 2v6h12V8H6zm12-2V4H6v2h12z',
+      'currency-exchange': 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+      'calendar': 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+      'update': 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+      'strategy': 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
+      'market': 'M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3',
+      'activity': 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+      'check-circle': 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+      'dollar-sign': 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+      'profit': 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+      'reinvest': 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+      'layers': 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+      'safety-check': 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+      'trending-up': 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+      'shield': 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+      'steps': 'M13 5l7 7-7 7M5 5l7 7-7 7',
+      'cooldown': 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+      'settings': 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
+      'repeat': 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+      'active-orders': 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+      'martingale': 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+      'martingale-step': 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+      'risk': 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
+    };
+    
+    return icons[iconName] || icons['settings'];
   };
 
   return (
-    <div className="flex items-start">
-      <div className="bg-gray-100 p-2 rounded-lg mr-4">
-        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={getIconPath()} />
+    <div className="flex items-start gap-3">
+      <div className="flex-shrink-0 mt-0.5">
+        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={getIcon(icon)} />
         </svg>
       </div>
       <div>
-        <h3 className="text-sm font-medium text-gray-500">{label}</h3>
-        <p className="text-base font-medium text-gray-900">{value}</p>
+        <p className="text-sm font-medium text-gray-500">{label}</p>
+        <p className="text-sm text-gray-900">{value}</p>
       </div>
     </div>
   );
 };
 
 const StatCard = ({ icon, title, value, maxValue, currency }) => {
-  const getIconPath = () => {
-    switch(icon) {
-      case 'activity':
-        return "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z";
-      case 'check-circle':
-        return "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z";
-      case 'dollar-sign':
-        return "M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z";
-      default:
-        return "M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z";
-    }
-  };
-
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-      <div className="flex items-start">
-        <div className="bg-blue-100 p-2 rounded-lg mr-4">
+    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 bg-blue-100 rounded-lg">
           <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={getIconPath()} />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
         </div>
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="text-xl font-semibold text-gray-900">{value}{currency && <span className="text-sm font-normal text-gray-500 ml-1">{currency}</span>}</p>
-          {maxValue && (
-            <div className="mt-1 w-full bg-gray-200 rounded-full h-1.5">
-              <div 
-                className="bg-blue-600 h-1.5 rounded-full" 
-                style={{ width: `${(value / maxValue) * 100}%` }}
-              ></div>
-            </div>
-          )}
-        </div>
+        <h3 className="text-sm font-medium text-gray-700">{title}</h3>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <p className="text-2xl font-semibold text-gray-900">{value}</p>
+        {maxValue && (
+          <span className="text-sm text-gray-500">of {maxValue}</span>
+        )}
+        {currency && (
+          <span className="text-sm text-gray-500">{currency}</span>
+        )}
       </div>
     </div>
   );
@@ -486,5 +647,8 @@ const FormField = ({ label, type, value, onChange, placeholder }) => {
     </div>
   );
 };
-
 export default DcaBotDetail;
+
+
+
+
