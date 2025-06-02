@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
-  account_id: '33203501',
+  account_id: '2045951',
   name: 'BOT',
   pairs: 'USDT_BTC',
   base_order_volume: '10.0',
@@ -23,7 +23,7 @@ const initialFormState = {
 
 const defaultStrategyList = [
   {
-    strategy: 'nonstop',
+    strategy: 'short',
     options: {}
   }
 ];
