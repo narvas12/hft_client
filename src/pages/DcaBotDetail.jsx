@@ -138,6 +138,7 @@ const DcaBotDetail = () => {
                 <span className="text-xs text-gray-500">ID: {bot.id}</span>
                 <span className="text-xs text-gray-500">Created: {formatDate(bot.created_at)}</span>
                 <span className="text-xs text-gray-500">Strategy: {bot.strategy_list[0].strategy}</span>
+                <span className="text-xs text-gray-500">Strategy: {bot.strategy}</span>
               </div>
             </div>
           </div>

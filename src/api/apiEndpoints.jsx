@@ -14,4 +14,10 @@ export const API = {
     DELETE_BOT: (botId) => `/delete-dca-bot/${botId}`,
     UPDATE_BOT: (botId) => `/update-dca-bot/${botId}`,
   },
+
+  ACCOUNT_MANAGEMENT: {
+    ADD_EXCHANGE: "/add-exchange-account/",
+    EXCHANGE_DETAILS: (account_id) => `/account/details/${account_id}`,
+    ACCOUNTS_LIST: "/account/list/",
+  },
 };

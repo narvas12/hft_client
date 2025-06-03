@@ -7,6 +7,8 @@ import HomePage from './pages/Home';
 import DcaBotList from './pages/DcaBotList';
 import DcaBotDetail from './pages/DcaBotDetail';
 import AdminRegister from './pages/Auth/AdminRegister';
+import StrategyList from './pages/StrategyList';
+import AccountList from './pages/AccountsList';
 
 const App = () => {
   return (
@@ -19,6 +21,8 @@ const App = () => {
               <Route path="/" element={<HomePage />} />
               <Route path="/bots/list" element={<DcaBotList />} />
               <Route path="/bots/detail/:id" element={<DcaBotDetail />} />
+              <Route path="/strategy/list" element={<StrategyList />} />
+              <Route path="/accounts/list" element={<AccountList />} />
               <Route path="/login" element={<AdminLogin />} />
               <Route path="/register" element={<AdminRegister />} />
 

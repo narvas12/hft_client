@@ -2,39 +2,39 @@ import React, { useState } from 'react';
 import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
-  account_id: '33202706',
-  name: 'BOT',
-  pairs: '',
-  base_order_volume: '100.0',
-  safety_order_volume: '300.0',
+  account_id: '33190073',
+  name: 'ETH/USDT Scalping Bot',
+  pairs: 'USDT_ETH',
+  base_order_volume: '20.0',                   // ✅ Smaller volume, faster cycling
+  safety_order_volume: '10.0',
   base_order_volume_type: 'quote_currency',
   safety_order_volume_type: 'quote_currency',
-  max_safety_orders: '4',
-  active_safety_orders_count: '1',
-  safety_order_step_percentage: '1.0',
-  take_profit: '3.5',
+  max_safety_orders: '2',                      // ✅ Fewer safety orders for quick exits
+  active_safety_orders_count: '2',
+  safety_order_step_percentage: '0.5',         // ✅ Tighter grid spacing
+  take_profit: '0.4',                          // ✅ Smaller take profit for scalping
   take_profit_type: 'total',
   min_profit_type: null,
-  martingale_volume_coefficient: '2.0',
-  martingale_step_coefficient: '4.0',
-  cooldown: '60',
-  close_deals_timeout: '60',
-  stop_loss_percentage: '1.0',
+  martingale_volume_coefficient: '1.1',        // ✅ Keep it low to reduce risk
+  martingale_step_coefficient: '1.0',
+  cooldown: '0',                               // ✅ No cooldown = faster re-entry
+  close_deals_timeout: '60',                   // ✅ Short timeout before closing failed deals
+
   stop_loss_type: 'stop_loss',
-  trailing_enabled: false,
-  trailing_deviation: '0.2',
+  trailing_enabled: true,
+  trailing_deviation: '0.1',                   // ✅ Tighter trailing to capture quick moves
   tsl_enabled: false,
-  deal_start_delay_seconds: null,
+  deal_start_delay_seconds: 0,                 // ✅ Immediate deal start
   stop_loss_timeout_enabled: false,
-  stop_loss_timeout_in_seconds: 0,
-  max_active_deals: '1',
+  stop_loss_timeout_in_seconds: null,
+  max_active_deals: '5',                       // ✅ Run multiple deals if exchange allows
   allowed_deals_on_same_pair: null,
-  strategy: 'short',
+  strategy: 'long',
   leverage_type: 'not_specified',
   leverage_custom_value: null,
-  start_order_type: 'limit',
-  reinvesting_percentage: null,
-  risk_reduction_percentage: null,
+  start_order_type: 'market',
+  reinvesting_percentage: 50,
+  risk_reduction_percentage: 100,
   min_price: null,
   max_price: null,
   min_price_percentage: null,
@@ -43,10 +43,21 @@ const initialFormState = {
 
 const defaultStrategyList = [
   {
-    strategy: 'nonstop',
-    options: {}
+    strategy: "rsi",
+    options: {
+      rsi_enabled: true,
+      rsi_timeframe: "1m",
+      rsi_value: 30,
+      rsi_condition: "lt", // Buy when RSI is less than 30
+      ema_enabled: true,
+      ema_timeframe: "1m",
+      ema_period: 9,
+      ema_candle_condition: "below", // Price below EMA = buy
+    }
   }
 ];
+
+
 
 // List of available trading pairs
 const tradingPairs = [
@@ -120,7 +131,7 @@ const HomePage = () => {
         martingale_step_coefficient: formData.martingale_step_coefficient,
         cooldown: parseInt(formData.cooldown),
         close_deals_timeout: parseInt(formData.close_deals_timeout),
-        stop_loss_percentage: formData.stop_loss_percentage,
+
         stop_loss_type: formData.stop_loss_type,
         trailing_enabled: formData.trailing_enabled,
         trailing_deviation: formData.trailing_deviation,
@@ -148,15 +159,46 @@ const HomePage = () => {
       setCurrentStep(3); // Success step
     } catch (err) {
       setCurrentStep(3); // Show error state
+      
+      // Improved error handling
       if (err.response?.data?.error_attributes) {
-        const errorMessages = Object.entries(err.response.data.error_attributes)
-          .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
-          .join('; ');
-        setError(`Validation errors: ${errorMessages}`);
+        // Format the error messages in a more user-friendly way
+        const errorMessages = [];
+        
+        // Handle pairs error
+        if (err.response.data.error_attributes.pairs) {
+          errorMessages.push(`Invalid trading pair: ${err.response.data.error_attributes.pairs.join(', ')}`);
+        }
+        
+        // Handle base order volume error
+        if (err.response.data.error_attributes.base_order_volume) {
+          const maxValue = err.response.data.error_attributes.base_order_volume[0].match(/Max: (.*)/)?.[1] || '';
+          errorMessages.push(`Base order size is too large. ${maxValue ? `Maximum allowed: ${maxValue}` : ''}`);
+        }
+        
+        // Handle safety order volume error
+        if (err.response.data.error_attributes.safety_order_volume) {
+          const maxValue = err.response.data.error_attributes.safety_order_volume[0].match(/Max: (.*)/)?.[1] || '';
+          errorMessages.push(`Safety order size is too large. ${maxValue ? `Maximum allowed: ${maxValue}` : ''}`);
+        }
+        
+        // Handle other potential errors
+        Object.entries(err.response.data.error_attributes).forEach(([field, errors]) => {
+          if (!['pairs', 'base_order_volume', 'safety_order_volume'].includes(field)) {
+            errorMessages.push(`${field}: ${errors.join(', ')}`);
+          }
+        });
+        
+        setError(errorMessages.join('\n'));
       } else if (err.response?.data?.detail) {
-        setError(err.response.data.detail);
+        // Handle other error formats
+        if (typeof err.response.data.detail === 'object') {
+          setError('Invalid parameters: ' + JSON.stringify(err.response.data.detail));
+        } else {
+          setError(err.response.data.detail);
+        }
       } else {
-        setError(err.message || 'An error occurred while creating the bot');
+        setError(err.message || 'An unexpected error occurred while creating the bot');
       }
     } finally {
       setLoading(false);
@@ -452,16 +494,10 @@ const HomePage = () => {
             >
               Create Another Bot
             </button>
-
-            
           </div>
-
           <div className="mt-6">
-           
-
             <a
               href='/bots/list'
-              
               className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
             >
               View Bots
@@ -476,14 +512,20 @@ const HomePage = () => {
             </svg>
           </div>
           <h2 className="mt-3 text-xl font-semibold text-gray-900">Error Creating Bot</h2>
-          <p className="mt-2 text-sm text-red-500">{error}</p>
+          <div className="mt-4 text-left bg-red-50 p-4 rounded-md">
+            {error.split('\n').map((line, i) => (
+              <p key={i} className="text-sm text-red-600 mb-2">
+                • {line}
+              </p>
+            ))}
+          </div>
           <div className="mt-6 flex justify-center space-x-4">
             <button
               type="button"
               onClick={prevStep}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Back
+              Back to Configuration
             </button>
             <button
               type="button"

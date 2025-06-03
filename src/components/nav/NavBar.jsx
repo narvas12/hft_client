@@ -46,6 +46,9 @@ const Navbar = () => {
 
             <NavLink to="/bots/create" text="Create Bot" />
             <NavLink to="/bots/list" text="My Bots" />
+            <NavLink to="/strategy/list" text="Strategies" />
+            <NavLink to="/accounts/list" text="Exchange Accounts" />
+            
 
           </div>
 
@@ -147,6 +150,8 @@ const Navbar = () => {
           <MobileNavLink to="/bots/create" text="Create Bot" onClick={toggleMobileMenu} />
           <MobileNavLink to="/bots/list" text="My Bots" onClick={toggleMobileMenu} />
           <MobileNavLink to="/exchange/accounts" text="Exchange Accounts" onClick={toggleMobileMenu} />
+          <MobileNavLink to="/accounts/list" text="Exchange Accounts" onClick={toggleMobileMenu} />
+          
           {user && (
             <MobileNavLink to="/settings" text="Settings" onClick={toggleMobileMenu} />
           )}
