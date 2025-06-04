@@ -3,63 +3,51 @@ import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
   account_id: '33190073',
-  name: 'ETH/USDT Scalping Bot',
+  name: 'ETH/USDT Classic trading',
   pairs: 'USDT_ETH',
-  base_order_volume: '20.0',                   // ✅ Smaller volume, faster cycling
-  safety_order_volume: '10.0',
-  base_order_volume_type: 'quote_currency',
-  safety_order_volume_type: 'quote_currency',
-  max_safety_orders: '2',                      // ✅ Fewer safety orders for quick exits
-  active_safety_orders_count: '2',
-  safety_order_step_percentage: '0.5',         // ✅ Tighter grid spacing
-  take_profit: '0.4',                          // ✅ Smaller take profit for scalping
+  base_order_volume: '20.0',
+  safety_order_volume: '15.0',
+  max_safety_orders: '3',
+  active_safety_orders_count: '0',
+  safety_order_step_percentage: '1.0',
+  take_profit: '1.0',
   take_profit_type: 'total',
-  min_profit_type: null,
-  martingale_volume_coefficient: '1.1',        // ✅ Keep it low to reduce risk
-  martingale_step_coefficient: '1.0',
-  cooldown: '0',                               // ✅ No cooldown = faster re-entry
-  close_deals_timeout: '60',                   // ✅ Short timeout before closing failed deals
-
+  stop_loss_percentage: '0.0',
   stop_loss_type: 'stop_loss',
+  martingale_volume_coefficient: '1.7',
+  martingale_step_coefficient: '4.0',
   trailing_enabled: true,
-  trailing_deviation: '0.1',                   // ✅ Tighter trailing to capture quick moves
-  tsl_enabled: false,
-  deal_start_delay_seconds: 0,                 // ✅ Immediate deal start
-  stop_loss_timeout_enabled: false,
-  stop_loss_timeout_in_seconds: null,
-  max_active_deals: '5',                       // ✅ Run multiple deals if exchange allows
-  allowed_deals_on_same_pair: null,
+  trailing_deviation: '0.2',
+  max_active_deals: '1',
   strategy: 'long',
-  leverage_type: 'not_specified',
-  leverage_custom_value: null,
-  start_order_type: 'market',
-  reinvesting_percentage: 50,
-  risk_reduction_percentage: 100,
-  min_price: null,
-  max_price: null,
-  min_price_percentage: null,
-  max_price_percentage: null
+  profit_currency: 'quote_currency',
+  start_order_type: 'limit',
+  reinvesting_percentage: '100.0',
+  safety_order_volume_type: 'quote_currency',
+  base_order_volume_type: 'quote_currency',
+  safety_order_calculation_mode: 'last_executed',
+  
+  // Strategy lists
+  strategy_list: [
+    {
+      strategy: "nonstop",
+      options: {}
+    }
+  ],
+  safety_strategy_list: [
+    {
+      strategy: "rsi",
+      options: {
+        time: "3m",
+        points: 30,
+        time_period: 7,
+        trigger_condition: "less"
+      }
+    }
+  ],
+  close_strategy_list: []
 };
 
-const defaultStrategyList = [
-  {
-    strategy: "rsi",
-    options: {
-      rsi_enabled: true,
-      rsi_timeframe: "1m",
-      rsi_value: 30,
-      rsi_condition: "lt", // Buy when RSI is less than 30
-      ema_enabled: true,
-      ema_timeframe: "1m",
-      ema_period: 9,
-      ema_candle_condition: "below", // Price below EMA = buy
-    }
-  }
-];
-
-
-
-// List of available trading pairs
 const tradingPairs = [
   'USDT_BTC',
   'USDT_ETH',
@@ -94,8 +82,6 @@ const HomePage = () => {
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showRiskManagement, setShowRiskManagement] = useState(false);
-  const [showOrderSettings, setShowOrderSettings] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
   const handleChange = (e) => {
@@ -116,73 +102,78 @@ const HomePage = () => {
       const payload = {
         account_id: Number(formData.account_id),
         name: formData.name,
-        pairs: formData.pairs,
+        pairs: [formData.pairs], // Note: API expects an array
         base_order_volume: formData.base_order_volume,
         safety_order_volume: formData.safety_order_volume,
-        base_order_volume_type: formData.base_order_volume_type,
-        safety_order_volume_type: formData.safety_order_volume_type,
         max_safety_orders: parseInt(formData.max_safety_orders),
         active_safety_orders_count: parseInt(formData.active_safety_orders_count),
         safety_order_step_percentage: formData.safety_order_step_percentage,
         take_profit: formData.take_profit,
         take_profit_type: formData.take_profit_type,
-        min_profit_type: formData.min_profit_type,
+        stop_loss_percentage: formData.stop_loss_percentage,
+        stop_loss_type: formData.stop_loss_type,
         martingale_volume_coefficient: formData.martingale_volume_coefficient,
         martingale_step_coefficient: formData.martingale_step_coefficient,
-        cooldown: parseInt(formData.cooldown),
-        close_deals_timeout: parseInt(formData.close_deals_timeout),
-
-        stop_loss_type: formData.stop_loss_type,
         trailing_enabled: formData.trailing_enabled,
         trailing_deviation: formData.trailing_deviation,
-        tsl_enabled: formData.tsl_enabled,
-        deal_start_delay_seconds: formData.deal_start_delay_seconds,
-        stop_loss_timeout_enabled: formData.stop_loss_timeout_enabled,
-        stop_loss_timeout_in_seconds: formData.stop_loss_timeout_in_seconds,
         max_active_deals: parseInt(formData.max_active_deals),
-        allowed_deals_on_same_pair: formData.allowed_deals_on_same_pair,
         strategy: formData.strategy,
-        leverage_type: formData.leverage_type,
-        leverage_custom_value: formData.leverage_custom_value,
+        profit_currency: formData.profit_currency,
         start_order_type: formData.start_order_type,
         reinvesting_percentage: formData.reinvesting_percentage,
-        risk_reduction_percentage: formData.risk_reduction_percentage,
-        min_price: formData.min_price,
-        max_price: formData.max_price,
-        min_price_percentage: formData.min_price_percentage,
-        max_price_percentage: formData.max_price_percentage,
-        strategy_list: defaultStrategyList
+        safety_order_volume_type: formData.safety_order_volume_type,
+        base_order_volume_type: formData.base_order_volume_type,
+        safety_order_calculation_mode: formData.safety_order_calculation_mode,
+        strategy_list: formData.strategy_list,
+        safety_strategy_list: formData.safety_strategy_list,
+        close_strategy_list: formData.close_strategy_list,
+        
+        // Fields that should be null or default in payload but not in form
+        take_profit_steps: [],
+        min_profit_percentage: "0.0",
+        min_profit_type: null,
+        cooldown: "0",
+        btc_price_limit: "0.0",
+        min_volume_btc_24h: "0.0",
+        deal_start_delay_seconds: null,
+        stop_loss_timeout_enabled: false,
+        stop_loss_timeout_in_seconds: 0,
+        disable_after_deals_count: null,
+        deals_counter: null,
+        allowed_deals_on_same_pair: null,
+        close_deals_timeout: null,
+        min_price: null,
+        max_price: null,
+        leverage_type: "not_specified",
+        leverage_custom_value: null,
+        reinvested_volume_usd: null,
+        min_price_percentage: null,
+        max_price_percentage: null
       };
 
       const data = await hftBotService.createDcaBot(payload);
       setResponse(data);
-      setCurrentStep(3); // Success step
+      setCurrentStep(3);
     } catch (err) {
-      setCurrentStep(3); // Show error state
+      setCurrentStep(3);
       
-      // Improved error handling
       if (err.response?.data?.error_attributes) {
-        // Format the error messages in a more user-friendly way
         const errorMessages = [];
         
-        // Handle pairs error
         if (err.response.data.error_attributes.pairs) {
           errorMessages.push(`Invalid trading pair: ${err.response.data.error_attributes.pairs.join(', ')}`);
         }
         
-        // Handle base order volume error
         if (err.response.data.error_attributes.base_order_volume) {
           const maxValue = err.response.data.error_attributes.base_order_volume[0].match(/Max: (.*)/)?.[1] || '';
           errorMessages.push(`Base order size is too large. ${maxValue ? `Maximum allowed: ${maxValue}` : ''}`);
         }
         
-        // Handle safety order volume error
         if (err.response.data.error_attributes.safety_order_volume) {
           const maxValue = err.response.data.error_attributes.safety_order_volume[0].match(/Max: (.*)/)?.[1] || '';
           errorMessages.push(`Safety order size is too large. ${maxValue ? `Maximum allowed: ${maxValue}` : ''}`);
         }
         
-        // Handle other potential errors
         Object.entries(err.response.data.error_attributes).forEach(([field, errors]) => {
           if (!['pairs', 'base_order_volume', 'safety_order_volume'].includes(field)) {
             errorMessages.push(`${field}: ${errors.join(', ')}`);
@@ -191,7 +182,6 @@ const HomePage = () => {
         
         setError(errorMessages.join('\n'));
       } else if (err.response?.data?.detail) {
-        // Handle other error formats
         if (typeof err.response.data.detail === 'object') {
           setError('Invalid parameters: ' + JSON.stringify(err.response.data.detail));
         } else {
@@ -235,7 +225,7 @@ const HomePage = () => {
             <span className="text-gray-500">USDT</span>
           </div>
         )}
-        {['take_profit', 'stop_loss_percentage', 'safety_order_step_percentage', 'trailing_deviation'].includes(id) && (
+        {['safety_order_step_percentage', 'take_profit', 'stop_loss_percentage', 'trailing_deviation'].includes(id) && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             <span className="text-gray-500">%</span>
           </div>
@@ -251,7 +241,7 @@ const HomePage = () => {
           type="checkbox"
           id={id}
           name={id}
-          checked={formData[id] || false}
+          checked={formData[id]}
           onChange={handleChange}
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
@@ -265,7 +255,7 @@ const HomePage = () => {
     </div>
   );
 
-  const renderSelect = (id, label, options, helpText = '') => (
+  const renderSelect = (id, label, options) => (
     <div className="mb-6">
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
         {label}
@@ -273,48 +263,14 @@ const HomePage = () => {
       <select
         id={id}
         name={id}
-        value={formData[id] || ''}
+        value={formData[id]}
         onChange={handleChange}
         className="block w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 rounded-md focus:ring-blue-500 focus:border-blue-500"
       >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+        {options.map(option => (
+          <option key={option.value} value={option.value}>{option.label}</option>
         ))}
       </select>
-      {helpText && (
-        <p className="mt-1 text-xs text-gray-500">{helpText}</p>
-      )}
-    </div>
-  );
-
-  const renderStepIndicator = () => (
-    <div className="mb-8">
-      <div className="flex justify-between">
-        {[1, 2, 3].map((step) => (
-          <div key={step} className="flex flex-col items-center">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${currentStep >= step ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}
-            >
-              {step}
-            </div>
-            <div className={`mt-2 text-sm font-medium ${currentStep >= step ? 'text-blue-600' : 'text-gray-500'}`}>
-              {step === 1 && 'Basic Info'}
-              {step === 2 && 'Configuration'}
-              {step === 3 && 'Review'}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 relative">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200">
-          <div
-            className="h-1 bg-blue-600 transition-all duration-300"
-            style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
-          ></div>
-        </div>
-      </div>
     </div>
   );
 
@@ -326,11 +282,29 @@ const HomePage = () => {
       </div>
       
       {renderInput('name', 'Bot Name', 'text', '', '', 'Give your bot a descriptive name')}
-      {renderSelect('pairs', 'Trading Pair', tradingPairs.map(pair => ({
-        value: pair,
-        label: pair
-      })), 'Select a trading pair')}
       {renderInput('account_id', 'Account ID', 'text', '', '', 'Your exchange account ID', true)}
+      
+      <div className="mb-6">
+        <label htmlFor="pairs" className="block text-sm font-medium text-gray-700 mb-1">
+          Trading Pair
+        </label>
+        <select
+          id="pairs"
+          name="pairs"
+          value={formData.pairs}
+          onChange={handleChange}
+          className="block w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 rounded-md focus:ring-blue-500 focus:border-blue-500"
+        >
+          {tradingPairs.map(pair => (
+            <option key={pair} value={pair}>{pair}</option>
+          ))}
+        </select>
+      </div>
+      
+      {renderSelect('strategy', 'Strategy', [
+        { value: 'long', label: 'Long' },
+        { value: 'short', label: 'Short' }
+      ])}
       
       <div className="flex justify-end">
         <button
@@ -348,49 +322,100 @@ const HomePage = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Trading Parameters</h2>
-        <p className="text-sm text-gray-500">Configure your DCA strategy parameters</p>
+        <p className="text-sm text-gray-500">Configure your trading bot parameters</p>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {renderInput('base_order_volume', 'Base Order', 'number', '0.01', '0', 'Initial order size')}
-        {renderInput('safety_order_volume', 'Safety Order', 'number', '0.01', '0', 'Additional order size')}
-        {renderInput('take_profit', 'Take Profit', 'number', '0.01', '0.1', 'Target profit percentage')}
-        {renderInput('safety_order_step_percentage', 'Price Drop Step', 'number', '0.01', '0.1', 'Before next safety order')}
+        {renderInput('base_order_volume', 'Base Order', 'number', '0.01', '0', 'Initial order size in quote currency')}
+        {renderInput('safety_order_volume', 'Safety Order', 'number', '0.01', '0', 'Additional order size in quote currency')}
         {renderInput('max_safety_orders', 'Max Safety Orders', 'number', '1', '1', 'Maximum safety orders')}
-        {renderInput('active_safety_orders_count', 'Active Safety Orders', 'number', '1', '1', 'Concurrent safety orders')}
+        {renderInput('active_safety_orders_count', 'Active Safety Orders', 'number', '1', '0', 'Concurrent safety orders')}
+        {renderInput('safety_order_step_percentage', 'Price Drop Step', 'number', '0.01', '0.1', 'Percentage before next safety order')}
+        {renderInput('martingale_volume_coefficient', 'Volume Coefficient', 'number', '0.1', '1', 'Multiplier for safety orders')}
+        {renderInput('martingale_step_coefficient', 'Step Coefficient', 'number', '0.1', '1', 'Multiplier for price steps')}
         {renderInput('max_active_deals', 'Max Active Deals', 'number', '1', '1', 'Maximum concurrent deals')}
       </div>
 
-      {/* Risk Management Section */}
       <div className="border-t border-gray-200 pt-4">
-        <button
-          type="button"
-          onClick={() => setShowRiskManagement(!showRiskManagement)}
-          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-        >
-          {showRiskManagement ? 'Hide' : 'Show'} Risk Management
-          <svg className={`ml-1 w-4 h-4 transition-transform ${showRiskManagement ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Take Profit Configuration</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mb-6">
+            <label htmlFor="take_profit_type" className="block text-sm font-medium text-gray-700 mb-1">
+              Take Profit Type
+            </label>
+            <select
+              id="take_profit_type"
+              name="take_profit_type"
+              value={formData.take_profit_type}
+              onChange={handleChange}
+              className="block w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="total">Total</option>
+              <option value="base">Base</option>
+              <option value="base_and_safety">Base and Safety</option>
+            </select>
+          </div>
+          <div className="mb-6">
+            <label htmlFor="take_profit" className="block text-sm font-medium text-gray-700 mb-1">
+              Take Profit (%)
+            </label>
+            <input
+              type="number"
+              id="take_profit"
+              name="take_profit"
+              value={formData.take_profit}
+              onChange={handleChange}
+              step="0.1"
+              min="0"
+              className="block w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 pt-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Stop Loss Configuration</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="mb-6">
+            <label htmlFor="stop_loss_type" className="block text-sm font-medium text-gray-700 mb-1">
+              Stop Loss Type
+            </label>
+            <select
+              id="stop_loss_type"
+              name="stop_loss_type"
+              value={formData.stop_loss_type}
+              onChange={handleChange}
+              className="block w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="stop_loss">Stop Loss</option>
+              <option value="trailing">Trailing Stop</option>
+            </select>
+          </div>
+          <div className="mb-6">
+            <label htmlFor="stop_loss_percentage" className="block text-sm font-medium text-gray-700 mb-1">
+              Stop Loss (%)
+            </label>
+            <input
+              type="number"
+              id="stop_loss_percentage"
+              name="stop_loss_percentage"
+              value={formData.stop_loss_percentage}
+              onChange={handleChange}
+              step="0.1"
+              min="0"
+              className="block w-full px-4 py-2 bg-white border border-gray-300 text-gray-900 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
         
-        {showRiskManagement && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderInput('stop_loss_percentage', 'Stop Loss', 'number', '0.01', '0', 'Set to 0 to disable')}
-            {renderSelect('stop_loss_type', 'Stop Loss Type', [
-              { value: 'stop_loss', label: 'Stop Loss' },
-              { value: 'stop_loss_and_disable_bot', label: 'Stop Loss & Disable Bot' }
-            ])}
-            {renderCheckbox('tsl_enabled', 'Trailing Stop Loss Enabled', 'Enable trailing stop loss')}
-            {renderInput('trailing_deviation', 'Trailing Deviation', 'number', '0.01', '0', 'Percentage for trailing stop')}
-            {renderCheckbox('stop_loss_timeout_enabled', 'Stop Loss Timeout Enabled', 'Enable timeout for stop loss')}
-            {renderInput('stop_loss_timeout_in_seconds', 'Stop Loss Timeout (seconds)', 'number', '1', '0', 'Timeout duration')}
-            {renderInput('risk_reduction_percentage', 'Risk Reduction', 'number', '0.01', '0', 'Percentage to reduce risk')}
+        {formData.stop_loss_type === 'trailing' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {renderCheckbox('trailing_enabled', 'Enable Trailing Stop', 'Automatically adjust stop loss as price moves favorably')}
+            {renderInput('trailing_deviation', 'Trailing Deviation (%)', 'number', '0.1', '0', 'Percentage deviation for trailing stop')}
           </div>
         )}
       </div>
 
-      {/* Advanced Settings Section */}
       <div className="border-t border-gray-200 pt-4">
         <button
           type="button"
@@ -405,50 +430,32 @@ const HomePage = () => {
         
         {showAdvanced && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderInput('cooldown', 'Cooldown', 'number', '1', '0', 'Delay between deals (seconds')}
-            {renderInput('close_deals_timeout', 'Close Timeout', 'number', '1', '0', 'Timeout for closing (seconds)')}
-            {renderInput('martingale_volume_coefficient', 'Volume Coefficient', 'number', '0.1', '1', 'Multiplier for safety orders')}
-            {renderInput('martingale_step_coefficient', 'Step Coefficient', 'number', '0.1', '1', 'Multiplier for price steps')}
-            {renderInput('deal_start_delay_seconds', 'Deal Start Delay (seconds)', 'number', '1', '0', 'Delay before starting new deal')}
-            {renderInput('allowed_deals_on_same_pair', 'Allowed Deals on Same Pair', 'number', '1', '1', 'Max concurrent deals per pair')}
-          </div>
-        )}
-      </div>
-
-      {/* Order Settings Section */}
-      <div className="border-t border-gray-200 pt-4">
-        <button
-          type="button"
-          onClick={() => setShowOrderSettings(!showOrderSettings)}
-          className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-        >
-          {showOrderSettings ? 'Hide' : 'Show'} Order Settings
-          <svg className={`ml-1 w-4 h-4 transition-transform ${showOrderSettings ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        
-        {showOrderSettings && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderSelect('strategy', 'Strategy', [
-              { value: 'long', label: 'Long' },
-              { value: 'short', label: 'Short' }
-            ], 'Trading strategy direction')}
-            {renderSelect('leverage_type', 'Leverage Type', [
-              { value: 'not_specified', label: 'Not Specified' },
-              { value: 'cross', label: 'Cross' },
-              { value: 'isolated', label: 'Isolated' },
-              { value: 'custom', label: 'Custom' }
-            ], 'Margin trading leverage type')}
-            {formData.leverage_type === 'custom' && renderInput('leverage_custom_value', 'Custom Leverage', 'number', '1', '1', 'Custom leverage value')}
+            {renderSelect('profit_currency', 'Profit Currency', [
+              { value: 'quote_currency', label: 'Quote Currency' },
+              { value: 'base_currency', label: 'Base Currency' }
+            ])}
+            
             {renderSelect('start_order_type', 'Start Order Type', [
               { value: 'limit', label: 'Limit' },
               { value: 'market', label: 'Market' }
-            ], 'Type of order to start with')}
-            {renderInput('min_price', 'Minimum Price', 'number', '0.00000001', '0', 'Minimum allowed price')}
-            {renderInput('max_price', 'Maximum Price', 'number', '0.00000001', '0', 'Maximum allowed price')}
-            {renderInput('min_price_percentage', 'Minimum Price Percentage', 'number', '0.01', '0', 'Percentage from current price')}
-            {renderInput('max_price_percentage', 'Maximum Price Percentage', 'number', '0.01', '0', 'Percentage from current price')}
+            ])}
+            
+            {renderInput('reinvesting_percentage', 'Reinvesting Percentage', 'number', '1', '0', 'Percentage of profits to reinvest')}
+            
+            {renderSelect('safety_order_volume_type', 'Safety Order Volume Type', [
+              { value: 'quote_currency', label: 'Quote Currency' },
+              { value: 'base_currency', label: 'Base Currency' }
+            ])}
+            
+            {renderSelect('base_order_volume_type', 'Base Order Volume Type', [
+              { value: 'quote_currency', label: 'Quote Currency' },
+              { value: 'base_currency', label: 'Base Currency' }
+            ])}
+            
+            {renderSelect('safety_order_calculation_mode', 'Safety Order Calculation Mode', [
+              { value: 'last_executed', label: 'Last Executed' },
+              { value: 'next_execution', label: 'Next Execution' }
+            ])}
           </div>
         )}
       </div>
@@ -482,7 +489,7 @@ const HomePage = () => {
             </svg>
           </div>
           <h2 className="mt-3 text-xl font-semibold text-gray-900">Bot Created Successfully!</h2>
-          <p className="mt-2 text-sm text-gray-500">Your DCA trading bot has been successfully created and activated.</p>
+          <p className="mt-2 text-sm text-gray-500">Your trading bot has been successfully created and activated.</p>
           <div className="mt-6">
             <button
               type="button"
@@ -494,14 +501,6 @@ const HomePage = () => {
             >
               Create Another Bot
             </button>
-          </div>
-          <div className="mt-6">
-            <a
-              href='/bots/list'
-              className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-            >
-              View Bots
-            </a>
           </div>
         </div>
       ) : error ? (
@@ -579,12 +578,24 @@ const HomePage = () => {
                     <span className="font-medium">{formData.safety_order_volume} USDT</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Take Profit:</span>
-                    <span className="font-medium">{formData.take_profit}%</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-gray-500">Max Safety Orders:</span>
                     <span className="font-medium">{formData.max_safety_orders}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Active Safety Orders:</span>
+                    <span className="font-medium">{formData.active_safety_orders_count}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Price Drop Step:</span>
+                    <span className="font-medium">{formData.safety_order_step_percentage}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Volume Coefficient:</span>
+                    <span className="font-medium">{formData.martingale_volume_coefficient}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Step Coefficient:</span>
+                    <span className="font-medium">{formData.martingale_step_coefficient}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Max Active Deals:</span>
@@ -594,81 +605,74 @@ const HomePage = () => {
               </div>
             </div>
             
-            {(showRiskManagement || showAdvanced || showOrderSettings) && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Take Profit Configuration</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Take Profit Type:</span>
+                  <span className="font-medium">{formData.take_profit_type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Take Profit:</span>
+                  <span className="font-medium">{formData.take_profit}%</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Stop Loss Configuration</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Stop Loss Type:</span>
+                  <span className="font-medium">{formData.stop_loss_type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Stop Loss:</span>
+                  <span className="font-medium">{formData.stop_loss_percentage}%</span>
+                </div>
+                {formData.stop_loss_type === 'trailing' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Trailing Enabled:</span>
+                      <span className="font-medium">{formData.trailing_enabled ? 'Yes' : 'No'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Trailing Deviation:</span>
+                      <span className="font-medium">{formData.trailing_deviation}%</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {showAdvanced && (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="text-sm font-medium text-gray-700 mb-3">Advanced Configuration</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Risk Management */}
-                  {showRiskManagement && (
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Stop Loss:</span>
-                        <span className="font-medium">{formData.stop_loss_percentage}%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Stop Loss Type:</span>
-                        <span className="font-medium">{formData.stop_loss_type}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Trailing Stop Loss:</span>
-                        <span className="font-medium">{formData.tsl_enabled ? 'Enabled' : 'Disabled'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Trailing Deviation:</span>
-                        <span className="font-medium">{formData.trailing_deviation}%</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Advanced Settings */}
-                  {showAdvanced && (
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Cooldown:</span>
-                        <span className="font-medium">{formData.cooldown} seconds</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Close Timeout:</span>
-                        <span className="font-medium">{formData.close_deals_timeout} seconds</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Volume Coefficient:</span>
-                        <span className="font-medium">{formData.martingale_volume_coefficient}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Step Coefficient:</span>
-                        <span className="font-medium">{formData.martingale_step_coefficient}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Order Settings */}
-                  {showOrderSettings && (
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Leverage Type:</span>
-                        <span className="font-medium">{formData.leverage_type}</span>
-                      </div>
-                      {formData.leverage_type === 'custom' && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Custom Leverage:</span>
-                          <span className="font-medium">{formData.leverage_custom_value}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Start Order Type:</span>
-                        <span className="font-medium">{formData.start_order_type}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Min Price:</span>
-                        <span className="font-medium">{formData.min_price || 'Not set'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Max Price:</span>
-                        <span className="font-medium">{formData.max_price || 'Not set'}</span>
-                      </div>
-                    </div>
-                  )}
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Profit Currency:</span>
+                    <span className="font-medium">{formData.profit_currency === 'quote_currency' ? 'Quote Currency' : 'Base Currency'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Start Order Type:</span>
+                    <span className="font-medium">{formData.start_order_type === 'limit' ? 'Limit' : 'Market'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Reinvesting Percentage:</span>
+                    <span className="font-medium">{formData.reinvesting_percentage}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Safety Order Volume Type:</span>
+                    <span className="font-medium">{formData.safety_order_volume_type === 'quote_currency' ? 'Quote Currency' : 'Base Currency'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Base Order Volume Type:</span>
+                    <span className="font-medium">{formData.base_order_volume_type === 'quote_currency' ? 'Quote Currency' : 'Base Currency'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Safety Order Calculation Mode:</span>
+                    <span className="font-medium">{formData.safety_order_calculation_mode === 'last_executed' ? 'Last Executed' : 'Next Execution'}</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -709,16 +713,14 @@ const HomePage = () => {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create DCA Trading Bot</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Create Trading Bot</h1>
           <p className="mt-2 text-lg text-gray-600">
-            Automate your trading strategy with Dollar Cost Averaging
+            Configure your bot according to the API specifications
           </p>
         </div>
 
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="p-6 sm:p-8">
-            {renderStepIndicator()}
-
             <form onSubmit={handleSubmit}>
               {currentStep === 1 && renderStep1()}
               {currentStep === 2 && renderStep2()}
