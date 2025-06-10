@@ -16,8 +16,16 @@ const DcaBotDetail = () => {
 
   useEffect(() => {
     if (!id) return;
+
     fetchBot();
+
+    const interval = setInterval(() => {
+      fetchBot();
+    }, 60000);
+
+    return () => clearInterval(interval);
   }, [id]);
+
 
   const fetchBot = () => {
     setLoading(true);
@@ -56,7 +64,7 @@ const DcaBotDetail = () => {
     if (!window.confirm('Are you sure you want to delete this bot? This action cannot be undone.')) {
       return;
     }
-    
+
     setDeleteLoading(true);
     try {
       await hftBotService.deleteDcaBot(bot.id);
@@ -104,11 +112,11 @@ const DcaBotDetail = () => {
       </div>
       <h2 className="text-2xl font-bold text-gray-800 mb-2">Bot Not Found</h2>
       <p className="text-gray-600 mb-6 max-w-md">The requested bot could not be found in the system. Please check the ID or return to the bots list.</p>
-      <button 
-        onClick={() => navigate('/bots/list')} 
+      <button
+        onClick={() => navigate('/bots/list')}
         className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition duration-200 flex items-center"
       >
-      
+
         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -143,8 +151,8 @@ const DcaBotDetail = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Link 
-              to="/bots" 
+            <Link
+              to="/bots"
               className="flex items-center text-gray-600 hover:text-blue-600 transition duration-200 text-sm font-medium"
             >
               <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,41 +170,37 @@ const DcaBotDetail = () => {
             <nav className="flex">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-4 px-6 font-medium text-sm border-b-2 ${
-                  activeTab === 'overview'
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${activeTab === 'overview'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('configuration')}
-                className={`py-4 px-6 font-medium text-sm border-b-2 ${
-                  activeTab === 'configuration'
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${activeTab === 'configuration'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Configuration
               </button>
               <button
                 onClick={() => setActiveTab('performance')}
-                className={`py-4 px-6 font-medium text-sm border-b-2 ${
-                  activeTab === 'performance'
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${activeTab === 'performance'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Performance
               </button>
               <button
                 onClick={() => setActiveTab('events')}
-                className={`py-4 px-6 font-medium text-sm border-b-2 ${
-                  activeTab === 'events'
+                className={`py-4 px-6 font-medium text-sm border-b-2 ${activeTab === 'events'
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 Events
               </button>
@@ -210,32 +214,32 @@ const DcaBotDetail = () => {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
                   <div className="space-y-4">
-                    <DetailItem 
+                    <DetailItem
                       icon="account-balance"
                       label="Account"
                       value={bot.account_name || 'Not specified'}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="currency-exchange"
                       label="Trading Pairs"
                       value={bot.pairs.join(', ')}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="calendar"
                       label="Created At"
                       value={formatDate(bot.created_at)}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="update"
                       label="Last Updated"
                       value={formatDate(bot.updated_at)}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="strategy"
                       label="Strategy"
                       value={bot.strategy_list.map(s => s.strategy).join(', ')}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="market"
                       label="Market Type"
                       value={bot.active_deals?.[0]?.market_type || 'spot'}
@@ -245,27 +249,27 @@ const DcaBotDetail = () => {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Current Status</h2>
                   <div className="space-y-4">
-                    <DetailItem 
+                    <DetailItem
                       icon="activity"
                       label="Active Deals"
                       value={`${bot.active_deals_count} of ${bot.max_active_deals}`}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="check-circle"
                       label="Finished Deals"
                       value={bot.finished_deals_count}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="dollar-sign"
                       label="Total Profit"
                       value={`$${formatCurrency(bot.finished_deals_profit_usd)} USDT`}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="profit"
                       label="Active Deals Profit"
                       value={`$${formatCurrency(bot.active_deals_usd_profit)}`}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="reinvest"
                       label="Reinvesting Percentage"
                       value={formatPercentage(bot.reinvesting_percentage)}
@@ -286,32 +290,32 @@ const DcaBotDetail = () => {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Trading Parameters</h2>
                   <div className="space-y-4">
-                    <DetailItem 
+                    <DetailItem
                       icon="layers"
                       label="Base Order Volume"
                       value={`$${formatCurrency(bot.base_order_volume)} ${bot.base_order_volume_type === 'quote_currency' ? 'USDT' : bot.pairs[0].split('_')[1]}`}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="safety-check"
                       label="Safety Order Volume"
                       value={`$${formatCurrency(bot.safety_order_volume)} ${bot.safety_order_volume_type === 'quote_currency' ? 'USDT' : bot.pairs[0].split('_')[1]}`}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="trending-up"
                       label="Take Profit"
                       value={formatPercentage(bot.take_profit)}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="shield"
                       label="Stop Loss"
                       value={bot.stop_loss_percentage === "0.0" ? 'Disabled' : formatPercentage(bot.stop_loss_percentage)}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="steps"
                       label="Safety Order Step"
                       value={formatPercentage(bot.safety_order_step_percentage)}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="cooldown"
                       label="Cooldown"
                       value={`${bot.cooldown} seconds`}
@@ -321,32 +325,32 @@ const DcaBotDetail = () => {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Advanced Settings</h2>
                   <div className="space-y-4">
-                    <DetailItem 
+                    <DetailItem
                       icon="settings"
                       label="Strategy"
                       value={bot.strategy_list.map(s => s.strategy).join(', ')}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="repeat"
                       label="Max Safety Orders"
                       value={bot.max_safety_orders}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="active-orders"
                       label="Active Safety Orders"
                       value={bot.active_safety_orders_count}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="martingale"
                       label="Martingale Volume Coefficient"
                       value={bot.martingale_volume_coefficient}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="martingale-step"
                       label="Martingale Step Coefficient"
                       value={bot.martingale_step_coefficient}
                     />
-                    <DetailItem 
+                    <DetailItem
                       icon="risk"
                       label="Risk Reduction Percentage"
                       value={formatPercentage(bot.risk_reduction_percentage)}
@@ -361,18 +365,18 @@ const DcaBotDetail = () => {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <StatCard 
+                    <StatCard
                       icon="activity"
                       title="Active Deals"
                       value={bot.active_deals_count}
                       maxValue={bot.max_active_deals}
                     />
-                    <StatCard 
+                    <StatCard
                       icon="check-circle"
                       title="Completed Deals"
                       value={bot.finished_deals_count}
                     />
-                    <StatCard 
+                    <StatCard
                       icon="dollar-sign"
                       title="Total Profit"
                       value={`$${formatCurrency(bot.finished_deals_profit_usd)}`}
@@ -427,7 +431,7 @@ const DcaBotDetail = () => {
                       Created: {formatDate(deal.created_at)}
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Buy Details</h4>
@@ -441,7 +445,7 @@ const DcaBotDetail = () => {
                         Avg Price: ${formatCurrency(deal.bought_average_price)}
                       </p>
                     </div>
-                    
+
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Profit/Loss</h4>
                       <p className={`text-sm ${deal.actual_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -454,7 +458,7 @@ const DcaBotDetail = () => {
                         Take Profit: ${formatCurrency(deal.take_profit_price)} ({formatPercentage(deal.take_profit)})
                       </p>
                     </div>
-                    
+
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Current Status</h4>
                       <p className="text-sm">
@@ -468,7 +472,7 @@ const DcaBotDetail = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="mt-2">
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Order Steps</h4>
                     <div className="flex flex-wrap gap-2">
@@ -490,14 +494,13 @@ const DcaBotDetail = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mt-8">
-          <button 
+          <button
             onClick={toggleBotStatus}
             disabled={statusLoading}
-            className={`flex items-center gap-2 font-medium py-2.5 px-6 rounded-lg transition duration-200 ${
-              bot.is_enabled 
-                ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+            className={`flex items-center gap-2 font-medium py-2.5 px-6 rounded-lg transition duration-200 ${bot.is_enabled
+                ? 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                 : 'bg-green-100 text-green-700 hover:bg-green-200'
-            } disabled:opacity-70`}
+              } disabled:opacity-70`}
           >
             {statusLoading ? (
               <>
@@ -510,14 +513,14 @@ const DcaBotDetail = () => {
             ) : (
               <>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={bot.is_enabled ? "M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" : "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"}/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d={bot.is_enabled ? "M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" : "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"} />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {bot.is_enabled ? 'Pause Bot' : 'Activate Bot'}
               </>
             )}
           </button>
-          <button 
+          <button
             onClick={() => setIsEditing(!isEditing)}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition duration-200"
           >
@@ -526,7 +529,7 @@ const DcaBotDetail = () => {
             </svg>
             {isEditing ? 'Cancel Editing' : 'Edit Configuration'}
           </button>
-          <button 
+          <button
             onClick={handleDelete}
             disabled={deleteLoading}
             className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium py-2.5 px-6 rounded-lg transition duration-200 disabled:opacity-70"
@@ -557,56 +560,56 @@ const DcaBotDetail = () => {
             <form className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <FormField 
+                  <FormField
                     label="Bot Name"
                     type="text"
                     value={bot.name}
-                    onChange={() => {}}
+                    onChange={() => { }}
                   />
-                  <FormField 
+                  <FormField
                     label="Base Order Volume (USDT)"
                     type="number"
                     value={bot.base_order_volume}
-                    onChange={() => {}}
+                    onChange={() => { }}
                   />
-                  <FormField 
+                  <FormField
                     label="Take Profit (%)"
                     type="number"
                     value={bot.take_profit}
-                    onChange={() => {}}
+                    onChange={() => { }}
                   />
-                  <FormField 
+                  <FormField
                     label="Safety Order Step (%)"
                     type="number"
                     value={bot.safety_order_step_percentage}
-                    onChange={() => {}}
+                    onChange={() => { }}
                   />
                 </div>
                 <div className="space-y-4">
-                  <FormField 
+                  <FormField
                     label="Safety Order Volume (USDT)"
                     type="number"
                     value={bot.safety_order_volume}
-                    onChange={() => {}}
+                    onChange={() => { }}
                   />
-                  <FormField 
+                  <FormField
                     label="Max Safety Orders"
                     type="number"
                     value={bot.max_safety_orders}
-                    onChange={() => {}}
+                    onChange={() => { }}
                   />
-                  <FormField 
+                  <FormField
                     label="Stop Loss (%)"
                     type="number"
                     value={bot.stop_loss_percentage === "0.0" ? '' : bot.stop_loss_percentage}
-                    onChange={() => {}}
+                    onChange={() => { }}
                     placeholder="0 for disabled"
                   />
-                  <FormField 
+                  <FormField
                     label="Cooldown (seconds)"
                     type="number"
                     value={bot.cooldown}
-                    onChange={() => {}}
+                    onChange={() => { }}
                   />
                 </div>
               </div>
@@ -660,7 +663,7 @@ const DetailItem = ({ icon, label, value }) => {
       'martingale-step': 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
       'risk': 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z'
     };
-    
+
     return icons[iconName] || icons['settings'];
   };
 
