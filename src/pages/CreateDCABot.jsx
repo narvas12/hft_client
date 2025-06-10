@@ -77,7 +77,7 @@ const tradingPairs = [
   'USDT_GRT'
 ];
 
-const HomePage = () => {
+const CreateDCABot = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
@@ -734,4 +734,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default CreateDCABot;
