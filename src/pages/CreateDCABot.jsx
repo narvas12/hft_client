@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
-  account_id: '33190073',
+  account_id: '33213047',
   name: 'ETH/USDT Classic trading',
   pairs: 'USDT_ETH',
   base_order_volume: '20.0',
-  safety_order_volume: '15.0',
+  safety_order_volume: '10.0',
   max_safety_orders: '3',
   active_safety_orders_count: 3,
-  safety_order_step_percentage: '1.0',
+  safety_order_step_percentage: '0.8',
   take_profit: '1.0',
   take_profit_type: 'total',
   stop_loss_percentage: '0.0',
