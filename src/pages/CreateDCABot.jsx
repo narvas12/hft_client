@@ -3,8 +3,8 @@ import hftBotService from '../services/hftBotService';
 
 const initialFormState = {
   account_id: '33213047',
-  name: 'ETH/USDT Classic trading',
-  pairs: 'USDT_ETH',
+  name: '',
+  pairs: '',
   base_order_volume: '20.0',
   safety_order_volume: '10.0',
   max_safety_orders: '3',
@@ -79,7 +79,11 @@ const tradingPairs = [
 ];
 
 const CreateDCABot = () => {
-  const [formData, setFormData] = useState(initialFormState);
+
+  const [formData, setFormData] = useState({
+    ...initialFormState,
+    name: `BOT-${initialFormState.pairs}` // Set initial name based on initial pair
+  });
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
@@ -87,12 +91,22 @@ const CreateDCABot = () => {
   const [currentStep, setCurrentStep] = useState(1);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
+  const { name, value, type, checked } = e.target;
+  
+  setFormData(prev => {
+    const newData = { 
       ...prev, 
       [name]: type === 'checkbox' ? checked : value 
-    }));
-  };
+    };
+    
+    // Automatically update the name when pairs changes
+    if (name === 'pairs') {
+      newData.name = `BOT-${value}`;
+    }
+    
+    return newData;
+  });
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -283,7 +297,7 @@ const CreateDCABot = () => {
         <p className="text-sm text-gray-500">Provide basic details for your trading bot</p>
       </div>
       
-      {renderInput('name', 'Bot Name', 'text', '', '', 'Give your bot a descriptive name')}
+      {renderInput('name', 'Bot Name', 'text', '', '', 'Auto-generated from trading pair', true)}
       {renderInput('account_id', 'Account ID', 'text', '', '', 'Your exchange account ID', true)}
       
       <div className="mb-6">

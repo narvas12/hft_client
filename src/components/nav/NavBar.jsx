@@ -48,6 +48,7 @@ const Navbar = () => {
             <NavLink to="/bots/list" text="My Bots" />
             <NavLink to="/strategy/list" text="Strategies" />
             <NavLink to="/accounts/list" text="Exchange Accounts" />
+            <NavLink to="/gainers" text="Gainers" />
             
 
           </div>
