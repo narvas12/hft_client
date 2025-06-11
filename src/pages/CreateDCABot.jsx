@@ -51,6 +51,7 @@ const initialFormState = {
 
 const tradingPairs = [
   'USDT_BTC',
+  'USDT_PEPE',
   'USDT_ETH',
   'USDT_BNB',
   'USDT_SOL',
